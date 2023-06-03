@@ -35,6 +35,5 @@ func main() {
         h += 1
     }
 
-
     fmt.Printf("Marker after %d\n", marker)
 }
