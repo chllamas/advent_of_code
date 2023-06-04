@@ -8,10 +8,6 @@ enum FileNode {
     Doc(i32),
 }
 
-fn handle_ls() {
-    todo!() 
-}
-
 fn main() -> std::io::Result<()> {
     let file = File::open("input.txt")?;
     let reader = BufReader::new(file);
