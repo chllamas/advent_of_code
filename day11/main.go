@@ -1,7 +1,7 @@
 package main
 
 type Operation struct {
-    o string 
+    o string
     n int
 }
 
@@ -37,7 +37,7 @@ func (m *Monkey) runTurn() (int, uint64) {
         target = m.nop
     }
 
-    return target, ret
+    return target, ret % 9699690 // I had to search up for this magic number here.  I don't know modular arithmetic :(
 }
 
 func main() {
