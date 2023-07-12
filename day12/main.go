@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-    input, err := os.Open("test.txt")
+    input, err := os.Open("in.txt")
     if err != nil {
         panic("Couldn't open file")
     }
@@ -19,12 +19,11 @@ func main() {
     }
 
     xLen, yLen := len(grid[0]), len(grid)
-    shortestDistance := 'z'
     var startPoint [2]int
     outerLoop :
     for y, row := range grid {
         for x, elem := range row {
-            if elem < shortestDistance {
+            if elem == 'S' {
                 startPoint = [2]int{x, y}
                 break outerLoop
             }
@@ -49,7 +48,7 @@ func main() {
             if x >= 0 && x < xLen && y >= 0 && y < yLen && neighbor != startPoint && visited[neighbor] == 0 {
                 comparison := grid[y][x]
                 canEnd := comparison == 'E'
-                if canEnd {
+                if comparison == 'E' {
                     comparison = 'z'
                 }
                 if node == startPoint || comparison <= grid[n][m] + 1 {
