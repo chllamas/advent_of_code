@@ -19,49 +19,60 @@ func main() {
     }
 
     xLen, yLen := len(grid[0]), len(grid)
-    var startPoint [2]int
-    outerLoop :
+    var startPoints [][2]int
+    var targetPoint [2]int
     for y, row := range grid {
         for x, elem := range row {
-            if elem == 'S' {
-                startPoint = [2]int{x, y}
-                break outerLoop
+            if elem == 'S' || elem == 'a' {
+                grid[y][x] = 'a'
+                startPoints = append(startPoints, [2]int{x, y})
+            }
+            if elem == 'E' {
+                grid[y][x] = 'z'
+                targetPoint = [2]int{x, y}
             }
         }
     }
 
-    Q := [][2]int{startPoint}
-    visited := make(map[[2]int]int)
-    for len(Q) > 0 {
-        var node [2]int
-        node, Q = Q[0], Q[1:]
-        m, n := node[0], node[1]
-        neighbors := [4][2]int{
-            [2]int{m  , n-1},
-            [2]int{m  , n+1},
-            [2]int{m-1, n  },
-            [2]int{m+1, n  },
-        }
+    getShortestPath := func(startPoint [2]int) int {
+        Q := [][2]int{startPoint}
+        visited := make(map[[2]int]int)
+        for len(Q) > 0 {
+            var nodeCoord [2]int
+            nodeCoord, Q = Q[0], Q[1:]
+            nodeVal := grid[nodeCoord[1]][nodeCoord[0]]
+            neighbors := [4][2]int{
+                [2]int{nodeCoord[0]  , nodeCoord[1]-1},
+                [2]int{nodeCoord[0]  , nodeCoord[1]+1},
+                [2]int{nodeCoord[0]-1, nodeCoord[1]  },
+                [2]int{nodeCoord[0]+1, nodeCoord[1]  },
+            }
 
-        for _,neighbor := range neighbors {
-            x, y := neighbor[0], neighbor[1]
-            if x >= 0 && x < xLen && y >= 0 && y < yLen && neighbor != startPoint && visited[neighbor] == 0 {
-                comparison := grid[y][x]
-                canEnd := comparison == 'E'
-                if comparison == 'E' {
-                    comparison = 'z'
-                }
-                if node == startPoint || comparison <= grid[n][m] + 1 {
-                    if canEnd {
-                        println("Finished with distance", visited[node] + 1)
-                        os.Exit(0)
+            for _,neighborCoord := range neighbors {
+                x, y := neighborCoord[0], neighborCoord[1]
+                if x >= 0 && x < xLen && y >= 0 && y < yLen && neighborCoord != startPoint && visited[neighborCoord] == 0 {
+                    neighborVal := grid[y][x]
+                    if neighborVal <= nodeVal + 1 {
+                        depth := visited[nodeCoord] + 1
+                        if neighborCoord == targetPoint {
+                            return depth
+                        }
+                        Q = append(Q, neighborCoord)
+                        visited[neighborCoord] = depth
                     }
-                    Q = append(Q, neighbor)
-                    visited[neighbor] = visited[node] + 1
                 }
             }
         }
+
+        return -1
     }
 
-    os.Exit(1)
+    shortestPath := -1
+    for _,SP := range startPoints {
+        res := getShortestPath(SP)
+        if res != -1 && (shortestPath == -1 || res < shortestPath) {
+            shortestPath = res
+        }
+    }
+    println(shortestPath)
 }
