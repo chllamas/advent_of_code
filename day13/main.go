@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"os"
+    "sort"
 )
 
 func compare(left, right interface{}) float64 {
@@ -49,29 +50,31 @@ func main() {
     }
     defer file.Close()
 
-    var sum int
-    var buffer [2]string
+    packets := make([]interface{}, 2)
     scanner := bufio.NewScanner(file)
-    index := 1
+
+    packets[0] = 2
+    packets[1] = 6
 
     for scanner.Scan() {
-        for i,_ := range buffer {
-            buffer[i] = scanner.Text()
-            scanner.Scan()
+        var list interface{}
+        err := json.Unmarshal(scanner.Bytes(), &list)
+        if err != nil {
+            panic("Couldn't parse []byte")
         }
 
-        var left, right interface{}
-        errL, errR := json.Unmarshal([]byte(buffer[0]), &left), json.Unmarshal([]byte(buffer[1]), &right)
-        if errL != nil || errR != nil {
-            panic("Couldn't parse string")
-        }
+        index := sort.Search(len(packets), func(i int) bool {
+            return compare(list, packets[i]) < 0
+        })
 
-        if compare(left, right) <= 0 {
-            sum += index
-        }
-
-        index++
+        packets = append(packets, 0)
+        copy(packets[index+1:], packets[index:])
+        packets[index] = list
     }
 
-    println(sum)
+    for i,v := range packets {
+        if v == 2 || v == 6 {
+            println(i+1)
+        }
+    }
 }
