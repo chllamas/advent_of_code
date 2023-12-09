@@ -7,12 +7,6 @@ import (
 	"strings"
 )
 
-var load = map[string]int{
-    "red": 12,
-    "green": 13,
-    "blue": 14,
-}
-
 func main() {
     file, err := os.Open("input.txt")
     if err != nil {
@@ -20,26 +14,30 @@ func main() {
     }
 
     var result int
-    game_id := 1
     scanner := bufio.NewScanner(file)
-    main_loop :
     for scanner.Scan() {
+        max := func(n, m int) int {
+            if n > m {
+                return n
+            }
+            return m
+        }
+        minimums := map[string]int{
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+        }
         games := strings.Split(strings.Split(scanner.Text(), ": ")[1], "; ")
-        result += game_id
         for i := range games {
             game := strings.Split(games[i], ", ")
             for j := range game {
                 var name string
                 var amt int
                 fmt.Sscanf(game[j], "%d %s", &amt, &name)
-                if amt > load[name] {
-                    result -= game_id
-                    game_id += 1
-                    continue main_loop
-                }
+                minimums[name] = max(amt, minimums[name])
             }
         }
-        game_id += 1
+        result += minimums["red"] * minimums["green"] * minimums["blue"]
     }
     println("Resulted sum:", result)
 }
