@@ -8,12 +8,15 @@ import (
 	"strings"
 )
 
-const expectedTestSolution uint64 = 6440
+// for part 1
+//const expectedTestSolution uint64 = 6440
+const expectedTestSolution uint64 = 5905 // part 2
+const joker byte = 'J'
 var cardValues = map[byte]uint8{
     'A': 14,
     'K': 13,
     'Q': 12,
-    'J': 11,
+    'J': 1, // set to 11 for part 1
     'T': 10,
     '9': 9,
     '8': 8,
@@ -40,10 +43,24 @@ type Deck struct {
 
 func determineDeckType(s string) string {
     var result string
+    var jokersFound int
     cards := make(map[byte]int)
     for i := 0; i < 5; i++ {
-        cards[s[i]] += 1
+        if s[i] == joker {
+            jokersFound += 1
+        } else {
+            cards[s[i]] += 1
+        }
     }
+
+    // add jokers to largest kind
+    var largestIndex byte = 'A'
+    for k,v := range cards {
+        if v > cards[largestIndex] {
+            largestIndex = k
+        }
+    }
+    cards[largestIndex] += jokersFound
 
     var values []int
     for _,v := range cards {
