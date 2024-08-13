@@ -17,9 +17,9 @@ let () =
                         Hashtbl.mem tbl "hcl" && (
                                 let rec is_valid_hair_str str i =
                                         let validate ch = (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') in
-                                        (i >= String.length str && String.length str == 6) || (validate str.[i] && is_valid_hair_str str (i+1))
+                                        i >= String.length str || (validate str.[i] && is_valid_hair_str str (i+1))
                                 in
-                                is_valid_hair_str (Hashtbl.find tbl "hcl") 0
+                                String.length (Hashtbl.find tbl "hcl") == 7 && (Hashtbl.find tbl "hcl").[0] == '#' && is_valid_hair_str (Hashtbl.find tbl "hcl") 1
                         ) &&
                         Hashtbl.mem tbl "ecl" && (
                                 match Hashtbl.find tbl "ecl" with
@@ -29,7 +29,7 @@ let () =
                         Hashtbl.mem tbl "pid" && (
                                 let rec verify_pid str i = 
                                         String.length str >= i || (str.[i] >= '0' && str.[i] <= '9' && verify_pid str (i+1)) in
-                                verify_pid (Hashtbl.find tbl "pid") 0
+                                String.length (Hashtbl.find tbl "pid") == 9 && verify_pid (Hashtbl.find tbl "pid") 0
                         ) then
                         1 else 0
         ) in
