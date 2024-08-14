@@ -1,22 +1,32 @@
-let split_list _ =
-        ([], []);;
+let split_list lst =
+        let rec aux lst_a lst_b i =
+                if i == 0 then
+                        (List.rev lst_a, lst_b)
+                else
+                        match lst_b with
+                        | t :: ts -> aux (t :: lst_a) ts (i-1)
+                        | [] -> (List.rev lst_a, lst_b)
+        in
+        aux [] lst (List.length lst / 2);;
 
 let first_half lst =
         let (f, _) = split_list lst in
-        f
+        f;;
 
 let second_half lst =
         let (_, s) = split_list lst in
-        s
+        s;;
 
 let () =
-        let rec calc chars row_lc col_lc =
-                match chars with
-                | 'F' :: rest -> calc rest [] []
-                | 'B' :: rest -> calc rest row_lc col_lc
-                | 'L' :: rest -> calc rest row_lc col_lc
-                | 'R' :: rest -> calc rest row_lc col_lc
-                | _ -> 0
+        let calc row_chars col_chars =
+                let rec aux lc (st: int list) =
+                        match lc with
+                        | 'F' :: rest | 'L' :: rest -> aux rest (first_half st)
+                        | 'B' :: rest | 'R' :: rest -> aux rest (second_half st)
+                        | _ -> match st with
+                                | [] -> let _ = print_endline "Unexpected fail with st" in exit 1
+                                | t :: _ -> t
+                in exit 1 (* Request that the functino splits the string then makes them into two lists and we receive them ehre  tod o the math here and return a simple interger *)
         in
         let rec aux fp acc =
                 match input_line fp with
