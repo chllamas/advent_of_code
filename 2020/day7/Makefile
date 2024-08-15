@@ -1,6 +1,6 @@
 run:
-	ocamlopt -o day7 bin/main.ml
-	./day7
+	ocamlopt -o a.out bin/main.ml
+	./a.out
 
 push:
-	git add . && git commit -m 'updates' && git push
+	git add .. && git commit -m 'updates' && git push
