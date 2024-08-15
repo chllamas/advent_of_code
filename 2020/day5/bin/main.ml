@@ -17,6 +17,23 @@ let second_half lst =
         let (_, s) = split_list lst in
         s;;
 
+let rec print_seats hash x y =
+        match x,y with
+        | 128, 7 -> print_newline ()
+        | 128, _ -> print_seats hash 0 (y+1)
+        | col, row -> let id = ((col * 8) + row) in
+                print_char (if Hashtbl.mem hash id then 'x' else '.');
+                print_seats hash (x+1) y;;
+
+let rec find_seat lc f = match lc with
+        | [] -> let _ = print_endline "We failed" in exit 1
+        | t :: ts -> 
+                if f (t - 2) && not (f (t - 1)) then
+                        t - 1
+                else if f (t + 2) && not (f (t + 1)) then
+                        t + 1
+                else
+                        find_seat ts f;;
 let () =
         let calc (row_chars: char list) (col_chars: char list): int =
                 let rec aux lc (st: int list) =
@@ -32,18 +49,11 @@ let () =
                 let rec create_hash fp st =
                         match input_line fp with
                         | exception End_of_file -> st
-                        | line -> let _ = Hashtbl.add st (calc (String.sub line 0 7 |> String.to_seq |> List.of_seq) (String.sub line 7 3 |> String.to_seq |> List.of_seq)) true in
-                                st
-                in let hash = create_hash fp (Hashtbl.create 827) in
-                let rec find_seat (lc: int list) f: int  = match lc with
-                        | [] -> let _ = print_endline "We failed" in exit 1
-                        | t :: ts -> if f (t - 2) && not (f (t - 1)) then
-                                t - 1
-                        else if f (t + 2) && not (f (t + 1)) then
-                                t + 1
-                        else
-                                find_seat ts f
+                        | line -> let _ = Hashtbl.replace st (calc (String.sub line 0 7 |> String.to_seq |> List.of_seq) (String.sub line 7 3 |> String.to_seq |> List.of_seq)) true in
+                                create_hash fp st
                 in
+                let hash = create_hash fp (Hashtbl.create 826) in
                 find_seat (hash |> Hashtbl.to_seq_keys |> List.of_seq) (Hashtbl.mem hash)
+
         in
         Printf.printf "My seat is: %d\n" (aux (open_in "input.txt"));;
