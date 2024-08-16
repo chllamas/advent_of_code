@@ -3,7 +3,7 @@
 # Shared cache: disabled
 # Shared cache location: /home/bhogus/.cache/dune/db
 # Workspace root: /home/bhogus/advent_of_code/2020/day8
-# Auto-detected concurrency: 8
+# Auto-detected concurrency: 12
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
@@ -13,12 +13,12 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ /home/bhogus/.opam/5.2.0/bin/ocamlc.opt -config > /tmp/dune_a6b560_output
-$ (cd _build/default && /home/bhogus/.opam/5.2.0/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -bin-annot-occurrences -I test/.test_day8.eobjs/byte -no-alias-deps -opaque -o test/.test_day8.eobjs/byte/dune__exe__Test_day8.cmi -c -intf test/test_day8.mli)
-$ (cd _build/default && /home/bhogus/.opam/5.2.0/bin/ocaml-index aggregate -o lib/.day8.objs/cctx.ocaml-index)
-$ (cd _build/default && /home/bhogus/.opam/5.2.0/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -49 -nopervasives -nostdlib -g -bin-annot -bin-annot-occurrences -I lib/.day8.objs/byte -no-alias-deps -opaque -o lib/.day8.objs/byte/day8.cmo -c -impl lib/day8.ml-gen)
-$ (cd _build/default && /home/bhogus/.opam/5.2.0/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -bin-annot-occurrences -I test/.test_day8.eobjs/byte -intf-suffix .ml -no-alias-deps -opaque -o test/.test_day8.eobjs/byte/dune__exe__Test_day8.cmo -c -impl test/test_day8.ml)
-$ (cd _build/default && /home/bhogus/.opam/5.2.0/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -bin-annot-occurrences -I bin/.main.eobjs/byte -I lib/.day8.objs/byte -no-alias-deps -opaque -o bin/.main.eobjs/byte/dune__exe__Main.cmi -c -intf bin/main.mli)
-$ (cd _build/default && /home/bhogus/.opam/5.2.0/bin/ocaml-index aggregate -o test/.test_day8.eobjs/cctx.ocaml-index test/.test_day8.eobjs/byte/dune__exe__Test_day8.cmt test/.test_day8.eobjs/byte/dune__exe__Test_day8.cmti)
-$ (cd _build/default && /home/bhogus/.opam/5.2.0/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -bin-annot-occurrences -I bin/.main.eobjs/byte -I lib/.day8.objs/byte -intf-suffix .ml -no-alias-deps -opaque -o bin/.main.eobjs/byte/dune__exe__Main.cmo -c -impl bin/main.ml)
-$ (cd _build/default && /home/bhogus/.opam/5.2.0/bin/ocaml-index aggregate -o bin/.main.eobjs/cctx.ocaml-index bin/.main.eobjs/byte/dune__exe__Main.cmt bin/.main.eobjs/byte/dune__exe__Main.cmti)
+$ /home/bhogus/.opam/default/bin/ocamlc.opt -config > /tmp/dune_dada53_output
+$ (cd _build/default && /home/bhogus/.opam/default/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -bin-annot-occurrences -I test/.test_day8.eobjs/byte -no-alias-deps -opaque -o test/.test_day8.eobjs/byte/dune__exe__Test_day8.cmi -c -intf test/test_day8.mli)
+$ (cd _build/default && /home/bhogus/.opam/default/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -49 -nopervasives -nostdlib -g -bin-annot -bin-annot-occurrences -I lib/.day8.objs/byte -no-alias-deps -opaque -o lib/.day8.objs/byte/day8.cmo -c -impl lib/day8.ml-gen)
+$ (cd _build/default && /home/bhogus/.opam/default/bin/ocaml-index aggregate -o lib/.day8.objs/cctx.ocaml-index)
+$ (cd _build/default && /home/bhogus/.opam/default/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -bin-annot-occurrences -I test/.test_day8.eobjs/byte -intf-suffix .ml -no-alias-deps -opaque -o test/.test_day8.eobjs/byte/dune__exe__Test_day8.cmo -c -impl test/test_day8.ml)
+$ (cd _build/default && /home/bhogus/.opam/default/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -bin-annot-occurrences -I bin/.main.eobjs/byte -I lib/.day8.objs/byte -no-alias-deps -opaque -o bin/.main.eobjs/byte/dune__exe__Main.cmi -c -intf bin/main.mli)
+$ (cd _build/default && /home/bhogus/.opam/default/bin/ocaml-index aggregate -o test/.test_day8.eobjs/cctx.ocaml-index test/.test_day8.eobjs/byte/dune__exe__Test_day8.cmt test/.test_day8.eobjs/byte/dune__exe__Test_day8.cmti)
+$ (cd _build/default && /home/bhogus/.opam/default/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -bin-annot-occurrences -I bin/.main.eobjs/byte -I lib/.day8.objs/byte -intf-suffix .ml -no-alias-deps -opaque -o bin/.main.eobjs/byte/dune__exe__Main.cmo -c -impl bin/main.ml)
+$ (cd _build/default && /home/bhogus/.opam/default/bin/ocaml-index aggregate -o bin/.main.eobjs/cctx.ocaml-index bin/.main.eobjs/byte/dune__exe__Main.cmt bin/.main.eobjs/byte/dune__exe__Main.cmti)
