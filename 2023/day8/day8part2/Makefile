@@ -1,4 +1,4 @@
-build: push
+build:
 	ocamlopt -o a.out bin/main.ml
 	./a.out
 push:
