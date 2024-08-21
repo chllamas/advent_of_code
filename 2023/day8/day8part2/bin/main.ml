@@ -31,7 +31,7 @@ let tokenize fp =
     match try Some (input_line fp) with End_of_file -> None with
     | Some line ->
         let key, l, r =
-          Scanf.sscanf line "%s = (%s\, %s)" (fun a b c -> (a, b, c))
+          Scanf.sscanf line "%s = (%s%, %s)" (fun a b c -> (a, b, c))
         in
         Hashtbl.add tbl key (l, r);
         aux tbl
