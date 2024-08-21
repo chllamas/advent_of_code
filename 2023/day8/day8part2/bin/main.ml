@@ -29,23 +29,22 @@ let get_starting_tokens tbl =
   |> List.of_seq
 
 let tokenize fp =
-  let rec aux tbl =
+  let rec aux tbl i =
     try
       let key, l, r =
         Scanf.sscanf (input_line fp) "%s = (%s%, %s)" (fun a b c -> (a, b, c))
       in
       Hashtbl.add tbl key (l, r);
-      aux tbl
-    with End_of_file -> tbl
+      aux tbl (i + 1)
+    with End_of_file -> (tbl, i)
   in
-  aux (Hashtbl.create 766)
+  aux (Hashtbl.create 766) 0
 
 let () =
   let instructions =
     "LRRRLRRLRRLRLRRLRRRLLRRLLRRLRRRLRLRRLLRRLRRLRLRRRLRRRLRLRLRLRRRLRRLRRRLRLRRLLLRLRLLRLRRRLRLRRRLRRRLLLRRLRLRRLRRRLLRRLRRLRRLRRRLRRLRRLRRLRLRRLRLRLRLRLRLRRRLRRLRLLLRRRLRLRRRLRRRLLRRLRRRLRRLRRRLRRRLRLRRRLRRLRLLRRLLRLRRLRLRLLRRLLRRLLRRLRRLRRRLRLRRLRLRRRLRRRLLRLRRLLLLRRRLLRLLLRRLRRRLRRRLRRRLRLRRRLRRRLRRRLRLRRRR"
   in
-  let _ = print_endline "tarting tokens" in
-  let tokens = tokenize (open_in "input.txt") in
-  print_endline "Finished tokens";
+  let tokens, inserts = tokenize (open_in "input.txt") in
+  let _ = Printf.printf "tokens inserted: %d\n" inserts in
   Printf.printf "Steps taken: %d\n"
     (solve tokens (get_starting_tokens tokens) instructions)
