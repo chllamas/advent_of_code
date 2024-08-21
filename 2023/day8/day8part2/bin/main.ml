@@ -8,8 +8,10 @@ let do_step lst ch tbl =
     | [] -> (st, is_end)
     | x :: xs -> (
         match (ch, Hashtbl.find tbl x) with
-        | 'L', (next, _) -> aux xs (next :: st) (is_end && next.[2] == 'Z')
-        | 'R', (_, next) -> aux xs (next :: st) (is_end && next.[2] == 'Z')
+        | 'L', (next, _) ->
+            aux xs (next :: st) (is_end && Char.equal next.[2] 'Z')
+        | 'R', (_, next) ->
+            aux xs (next :: st) (is_end && Char.equal next.[2] 'Z')
         | _ -> unreachable ())
   in
   aux lst [] true
