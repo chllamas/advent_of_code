@@ -28,14 +28,13 @@ let get_starting_tokens tbl =
 
 let tokenize fp =
   let rec aux tbl =
-    match try Some (input_line fp) with End_of_file -> None with
-    | Some line ->
-        let key, l, r =
-          Scanf.sscanf line "%s = (%s%, %s)" (fun a b c -> (a, b, c))
-        in
-        Hashtbl.add tbl key (l, r);
-        aux tbl
-    | None -> tbl
+    try
+      let key, l, r =
+        Scanf.sscanf (input_line fp) "%s = (%s%, %s)" (fun a b c -> (a, b, c))
+      in
+      Hashtbl.add tbl key (l, r);
+      aux tbl
+    with End_of_file -> tbl
   in
   aux (Hashtbl.create 766)
 
