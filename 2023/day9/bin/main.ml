@@ -1,9 +1,11 @@
+(*
 let rec print_list = function
   | [] -> print_newline ()
   | x :: xs ->
       print_int x;
       print_char ' ';
       print_list xs
+  *)
 
 let next_history lst =
   let rec aux lc st =
