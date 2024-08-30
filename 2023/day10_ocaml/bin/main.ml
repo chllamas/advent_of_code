@@ -27,13 +27,13 @@ let create_graph lst =
 let parse_graph (graph : (int option * int option * int) array) =
   let queue = Queue.create () in
   let rec aux max_dist =
-    let validate_neighbor node dist =
-      if Option.is_none node then ()
-      else
-        match graph.(Option.get node) with
+    let validate_neighbor node_opt dist =
+      if Option.is_some node_opt then
+        let node = Option.get node_opt in
+        match graph.(node) with
         | a, b, -1 ->
-            graph.(Option.get node) <- (a, b, dist + 1);
-            Queue.push (Option.get node) queue
+            graph.(node) <- (a, b, dist + 1);
+            Queue.push node queue
         | _ -> ()
     in
     match try Some graph.(Queue.pop queue) with Queue.Empty -> None with
@@ -52,6 +52,6 @@ let () =
   let rec aux fp lc =
     try aux fp (input_line fp :: lc) with End_of_file -> List.rev lc
   in
-  aux (open_in "test.txt") []
+  aux (open_in "input.txt") []
   |> create_graph |> parse_graph
   |> Printf.printf "Furthest point is %d\n"
