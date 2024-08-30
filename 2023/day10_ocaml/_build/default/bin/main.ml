@@ -7,27 +7,46 @@ let create_graph lst =
   and left x y = if x > 0 then Some (calc_index (x - 1) y) else None
   and right x y = if x < len - 1 then Some (calc_index (x + 1) y) else None in
   let rec aux lc y =
-    match lc with
-    | [] -> arr
-    | t :: ts ->
-        String.iteri
-          (fun x ch ->
-            match ch with
-            | 'F' -> arr.(calc_index x y) <- (right x y, down x y, -1)
-            | 'S' -> arr.(calc_index x y) <- (right x y, down x y, 0)
-            | 'L' -> arr.(calc_index x y) <- (up x y, right x y, -1)
-            | '|' -> arr.(calc_index x y) <- (up x y, down x y, -1)
-            | '-' -> arr.(calc_index x y) <- (left x y, right x y, -1)
-            | '7' -> arr.(calc_index x y) <- (left x y, down x y, -1)
-            | 'J' -> arr.(calc_index x y) <- (left x y, up x y, -1)
-            | _ -> arr.(calc_index x y) <- (None, None, -1))
-          t;
-        aux ts (y + 1)
+    try
+      lc |> List.hd
+      |> String.iteri (fun x ch ->
+             match ch with
+             | 'F' -> arr.(calc_index x y) <- (right x y, down x y, -1)
+             | 'S' -> arr.(calc_index x y) <- (right x y, down x y, 0)
+             | 'L' -> arr.(calc_index x y) <- (up x y, right x y, -1)
+             | '|' -> arr.(calc_index x y) <- (up x y, down x y, -1)
+             | '-' -> arr.(calc_index x y) <- (left x y, right x y, -1)
+             | '7' -> arr.(calc_index x y) <- (left x y, down x y, -1)
+             | 'J' -> arr.(calc_index x y) <- (left x y, up x y, -1)
+             | _ -> arr.(calc_index x y) <- (None, None, -1));
+      aux (List.tl lc) (y + 1)
+    with Failure _ -> arr
   in
   aux lst 0
 
-(* We start at the node that has 0 distance and iterate from there i guess.. *)
-let parse_graph arr = 0
+let parse_graph (graph : (int option * int option * int) array) =
+  let queue = Queue.create () in
+  let rec aux max_dist =
+    let validate_neighbor node_opt dist =
+      if Option.is_some node_opt then
+        let node = Option.get node_opt in
+        match graph.(node) with
+        | a, b, -1 ->
+            graph.(node) <- (a, b, dist + 1);
+            Queue.push node queue
+        | _ -> ()
+    in
+    match try Some graph.(Queue.pop queue) with Queue.Empty -> None with
+    | Some (a, b, dist) ->
+        validate_neighbor a dist;
+        validate_neighbor b dist;
+        aux (max max_dist dist)
+    | _ -> max_dist
+  in
+  Queue.push
+    (Option.get (graph |> Array.find_index (fun (_, _, x) -> x == 0)))
+    queue;
+  aux 0
 
 let () =
   let rec aux fp lc =
