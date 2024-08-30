@@ -52,6 +52,6 @@ let () =
   let rec aux fp lc =
     try aux fp (input_line fp :: lc) with End_of_file -> List.rev lc
   in
-  aux (open_in "input.txt") []
+  aux (open_in "test.txt") []
   |> create_graph |> parse_graph
   |> Printf.printf "Furthest point is %d\n"
