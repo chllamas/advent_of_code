@@ -1,30 +1,21 @@
-let create_graph lst =
-  let len = List.length lst in
-  let calc_index x y = (y * len) + x in
-  let arr = Array.init (len * len) (fun _ -> (None, None, -1))
-  and up x y = if y > 0 then Some (calc_index x (y - 1)) else None
-  and down x y = if y < len - 1 then Some (calc_index x (y + 1)) else None
-  and left x y = if x > 0 then Some (calc_index (x - 1) y) else None
-  and right x y = if x < len - 1 then Some (calc_index (x + 1) y) else None in
-  let rec aux lc y =
-    try
-      lc |> List.hd
-      |> String.iteri (fun x ch ->
-             match ch with
-             | 'F' -> arr.(calc_index x y) <- (right x y, down x y, -1)
-             | 'S' -> arr.(calc_index x y) <- (right x y, down x y, 0)
-             | 'L' -> arr.(calc_index x y) <- (up x y, right x y, -1)
-             | '|' -> arr.(calc_index x y) <- (up x y, down x y, -1)
-             | '-' -> arr.(calc_index x y) <- (left x y, right x y, -1)
-             | '7' -> arr.(calc_index x y) <- (left x y, down x y, -1)
-             | 'J' -> arr.(calc_index x y) <- (left x y, up x y, -1)
-             | _ -> arr.(calc_index x y) <- (None, None, -1));
-      aux (List.tl lc) (y + 1)
-    with Failure _ -> arr
-  in
-  aux lst 0
+let create_graph (str, len) =
+  let up i = if i >= len then Some (i - len) else None
+  and down i = if i < len * (len - 1) then Some (i + len) else None
+  and left i = if i mod len > 0 then Some (i - 1) else None
+  and right i = if i mod len < len - 1 then Some (i + 1) else None in
+  Array.init (len * len) (fun i ->
+      match str.[i] with
+      | 'F' -> (right i, down i, -1)
+      | 'L' -> (up i, right i, -1)
+      | 'J' -> (up i, left i, -1)
+      | '7' -> (down i, left i, -1)
+      | 'S' -> (down i, up i, 0)
+      | '|' -> (up i, down i, -1)
+      | '-' -> (left i, right i, -1)
+      | '.' -> (None, None, -1)
+      | _ -> failwith "Unknown character in input")
 
-let parse_graph (graph : (int option * int option * int) array) =
+let parse_graph graph =
   let queue = Queue.create () in
   let rec aux max_dist =
     let validate_neighbor node_opt dist =
@@ -48,10 +39,30 @@ let parse_graph (graph : (int option * int option * int) array) =
     queue;
   aux 0
 
+(* Run parse graph and drop the value, we just need the graph to be updated with the loop, then we
+   iterate the graph and check if it's visited then its an edge, if it's not visited we do the raycasting
+     and add it to the count if its inside *)
+
+(*
 let () =
-  let rec aux fp lc =
-    try aux fp (input_line fp :: lc) with End_of_file -> List.rev lc
+  let rec aux fp str len =
+    match try Some (input_line fp) with End_of_file -> None with
+    | Some line -> aux fp (str ^ line) (String.length line)
+    | None -> (str, len)
   in
-  aux (open_in "input.txt") []
+  aux (open_in "input.txt") "" 0
   |> create_graph |> parse_graph
   |> Printf.printf "Furthest point is %d\n"
+  *)
+
+let () =
+  let rec aux fp str len =
+    match try Some (input_line fp) with End_of_file -> None with
+    | Some line -> aux fp (str ^ line) (String.length line)
+    | None -> (str, len)
+  in
+  let graph = aux (open_in "input.txt") "" 0 |> create_graph in
+  let _ = parse_graph graph in
+  (* Right here we do the raycasting *)
+  Array.fold_left (fun acc (a, b, dist) -> 0) 0 graph
+  |> Printf.printf "Enclosed tiles is %d\n"

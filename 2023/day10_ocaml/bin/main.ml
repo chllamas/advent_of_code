@@ -62,7 +62,21 @@ let () =
     | None -> (str, len)
   in
   let graph = aux (open_in "input.txt") "" 0 |> create_graph in
-  let _ = parse_graph graph in
-  (* Right here we do the raycasting *)
-  Array.fold_left (fun acc (a, b, dist) -> 0) 0 graph
+  let _ = parse_graph graph
+  and len = Float.to_int (sqrt (Float.of_int (Array.length graph))) in
+  let rec raycast node res =
+    match graph.(node) with
+    | _, _, dist when node mod len > 0 && dist > -1 ->
+        raycast (node - 1) (res + 1)
+    | _, _, dist when node mod len == 0 && dist > -1 -> (res + 1) mod 2 == 1
+    | _, _, _ when node mod len == 0 -> res mod 2 == 1
+    | _, _, _ -> raycast (node - 1) res
+  in
+  Array.fold_left
+    (fun (acc, i) -> function
+      | _, _, -1 when i mod len > 0 ->
+          ((acc + if raycast (i - 1) 0 then 1 else 0), i + 1)
+      | _, _, _ -> (acc, i + 1))
+    (0, 0) graph
+  |> fst
   |> Printf.printf "Enclosed tiles is %d\n"
