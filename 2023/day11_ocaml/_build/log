@@ -1,0 +1,6 @@
+# dune init project day11_ocaml
+# OCAMLPARAM: unset
+# Shared cache: disabled
+# Shared cache location: /home/bhogus/.cache/dune/db
+# Workspace root: /home/bhogus/advent_of_code/2023/day11_ocaml
+# Auto-detected concurrency: 8

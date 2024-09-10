@@ -1,0 +1,4 @@
+(executable
+ (public_name day11_ocaml)
+ (name main)
+ (libraries day11_ocaml))
