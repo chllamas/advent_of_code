@@ -13,10 +13,10 @@ pub fn main() !void {
     _ = try file.readAll(buffer);
 
     var list = std.ArrayList(*[]u8).init(allocator);
-    var iter = std.mem.splitScalar(buffer, '\n');
+    var iter = std.mem.splitScalar(u8, buffer, '\n');
     var cur = iter.next();
     while (cur != null) : (cur = iter.next()) {
-        var arr = allocator.alloc(u8, cur.?.len);
+        var arr = try allocator.alloc(u8, cur.?.len);
         try list.append(&arr);
     }
 }
