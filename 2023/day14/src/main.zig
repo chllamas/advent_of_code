@@ -1,15 +1,23 @@
 const std = @import("std");
-const pt = i32;
-const Position = struct { x: pt, y: pt };
 
-fn shift_graph(graph: [][]u8, shift: Position) void {
+fn shift_graph(graph: [][]u8) void {
     for (0.., graph) |y, *row| {
         for (0.., row.*) |x, ch| {
             if (ch == 'O') {
-                var cur: Position = .{ x, y };
-                var next: Position = .{ x + shift.x, y + shift.y };
+                var height = y;
+                while (height > 0 and graph[height - 1][x] == '.') : (height -= 1) {}
+                if (height != y) {
+                    graph[height][x] = 'O';
+                    graph[y][x] = '.';
+                }
             }
         }
+    }
+}
+
+fn print_graph(graph: *const [][]u8) void {
+    for (graph.*) |*row| {
+        std.debug.print("{s}\n", .{row.*});
     }
 }
 
@@ -37,4 +45,6 @@ pub fn main() !void {
     list.deinit();
 
     shift_graph(graph);
+
+    print_graph(&graph);
 }
