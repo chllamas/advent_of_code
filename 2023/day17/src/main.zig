@@ -31,4 +31,5 @@ pub fn main() !void {
     }
 
     const map = try array.toOwnedSlice();
+    const queue = std.DoublyLinkedList(Node){};
 }
