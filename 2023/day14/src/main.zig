@@ -115,7 +115,7 @@ fn find_cycle(allocator: std.mem.Allocator, graph: [][]u8) !u64 {
 pub fn main() !void {
     var allocator = std.heap.page_allocator;
 
-    const file = try std.fs.cwd().openFile("test.txt", .{});
+    const file = try std.fs.cwd().openFile("input.txt", .{});
     const file_size = try file.getEndPos();
     const buffer = try allocator.alloc(u8, file_size);
     defer allocator.free(buffer);
@@ -142,13 +142,13 @@ pub fn main() !void {
     }
 
     const cycle = try find_cycle(allocator, temp);
+
     for (temp) |arr| {
         allocator.free(arr);
     }
     allocator.free(temp);
 
     const modulus: u64 = 1_000_000_000 % cycle;
-
     for (0..modulus) |_| {
         do_cycle(graph);
     }
