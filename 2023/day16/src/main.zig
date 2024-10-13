@@ -10,6 +10,35 @@ const Node = struct {
     dir: Coord,
 };
 
+fn printVisitMap(map: [][]const u8, visited: []const u8, current_pos: Coord) void {
+    for (0.., map) |y, row| {
+        for (0.., row) |x, _| {
+            const id: usize = (y * map[0].len) + x;
+            if (x == current_pos.x and y == current_pos.y)
+                std.debug.print("O", .{})
+            else if (visited[id] > 0)
+                std.debug.print("#", .{})
+            else
+                std.debug.print(".", .{});
+        }
+        std.debug.print("\n", .{});
+    }
+}
+
+fn swapAndNegate(pt: Coord) Coord {
+    return Coord{
+        .x = -pt.y,
+        .y = -pt.x,
+    };
+}
+
+fn swap(pt: Coord) Coord {
+    return Coord{
+        .x = pt.y,
+        .y = pt.x,
+    };
+}
+
 fn createMap(allocator: std.mem.Allocator, buffer: []const u8) ![][]const u8 {
     var arr = std.ArrayList([]const u8).init(allocator);
     defer arr.deinit();
@@ -25,10 +54,112 @@ fn createMap(allocator: std.mem.Allocator, buffer: []const u8) ![][]const u8 {
     return result;
 }
 
+fn runConfig(allocator: std.mem.Allocator, map: [][]const u8, start_node: Node) !u64 {
+    var res: u64 = 0;
+    const visited = try allocator.alloc(u8, map.len * map[0].len);
+    defer allocator.free(visited);
+    for (0..visited.len) |i| {
+        visited[i] = 0;
+    }
+
+    var nodes = std.ArrayList(Node).init(allocator);
+    defer nodes.deinit();
+    try nodes.append(start_node);
+
+    while (nodes.popOrNull()) |obj| {
+        var pos = obj.pos;
+        var dir = obj.dir;
+        node_loop: while (true) {
+            const px: usize = @intCast(pos.x);
+            const py: usize = @intCast(pos.y);
+            const id: usize = (py * map[0].len) + px;
+
+            if (visited[id] == 0)
+                res += 1;
+            visited[id] += 1;
+
+            switch (map[py][px]) {
+                '|' => if (px != 0) {
+                    if (visited[id] <= 1) {
+                        if (py > 0) try nodes.append(.{
+                            .pos = .{
+                                .x = pos.x,
+                                .y = pos.y - 1,
+                            },
+                            .dir = .{
+                                .x = 0,
+                                .y = -1,
+                            },
+                        });
+                        if (py < map[0].len - 1) try nodes.append(.{
+                            .pos = .{
+                                .x = pos.x,
+                                .y = pos.y + 1,
+                            },
+                            .dir = .{
+                                .x = 0,
+                                .y = 1,
+                            },
+                        });
+                    }
+                    break :node_loop;
+                },
+                '-' => if (py != 0) {
+                    if (visited[id] <= 1) {
+                        if (px > 0) try nodes.append(.{
+                            .pos = .{
+                                .x = pos.x - 1,
+                                .y = pos.y,
+                            },
+                            .dir = .{
+                                .x = -1,
+                                .y = 0,
+                            },
+                        });
+                        if (px < map[0].len - 1) try nodes.append(.{
+                            .pos = .{
+                                .x = pos.x + 1,
+                                .y = pos.y,
+                            },
+                            .dir = .{
+                                .x = 1,
+                                .y = 0,
+                            },
+                        });
+                    }
+                    break :node_loop;
+                },
+                '/' => dir = swapAndNegate(dir),
+                '\\' => dir = swap(dir),
+                '.' => {},
+                else => {
+                    std.debug.print("Unhandled character: {c}\n", .{map[py][px]});
+                    @panic("Unhandled character case");
+                },
+            }
+
+            if ((pos.x == 0 and dir.x == -1) or
+                (pos.x == map[0].len - 1 and dir.x == 1) or
+                (pos.y == 0 and dir.y == -1) or
+                (pos.y == map.len - 1 and dir.y == 1))
+            {
+                break :node_loop;
+            }
+
+            pos = .{
+                .x = pos.x + dir.x,
+                .y = pos.y + dir.y,
+            };
+        }
+    }
+
+    return res;
+}
+
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const file = try std.fs.cwd().openFile("test.txt", .{});
+    const file = try std.fs.cwd().openFile("input.txt", .{});
     defer file.close();
 
     const file_size = try file.getEndPos();
@@ -41,104 +172,37 @@ pub fn main() !void {
     const map = try createMap(allocator, buffer);
     defer allocator.free(map);
 
-    const visited = try allocator.alloc(bool, map.len * map[0].len);
-    defer allocator.free(visited);
-    for (0..visited.len) |i| {
-        visited[i] = false;
+    var largest: u64 = 0;
+    const map_xend: i64 = @intCast(map[0].len);
+    const map_yend: i64 = @intCast(map.len);
+    const top_left = Coord{ .x = 0, .y = 0 };
+    const top_right = Coord{ .x = map_xend - 1, .y = 0 };
+    const bot_left = Coord{ .x = 0, .y = map_yend - 1 };
+    const bot_right = Coord{ .x = map_xend - 1, .y = map_yend - 1 };
+
+    largest = @max(largest, try runConfig(allocator, map, .{ .pos = top_left, .dir = .{ .x = 1, .y = 0 } }));
+    largest = @max(largest, try runConfig(allocator, map, .{ .pos = top_left, .dir = .{ .x = 0, .y = 1 } }));
+    largest = @max(largest, try runConfig(allocator, map, .{ .pos = top_right, .dir = .{ .x = -1, .y = 0 } }));
+    largest = @max(largest, try runConfig(allocator, map, .{ .pos = top_right, .dir = .{ .x = 0, .y = 1 } }));
+    largest = @max(largest, try runConfig(allocator, map, .{ .pos = bot_left, .dir = .{ .x = 1, .y = 0 } }));
+    largest = @max(largest, try runConfig(allocator, map, .{ .pos = bot_left, .dir = .{ .x = 0, .y = -1 } }));
+    largest = @max(largest, try runConfig(allocator, map, .{ .pos = bot_right, .dir = .{ .x = -1, .y = 0 } }));
+    largest = @max(largest, try runConfig(allocator, map, .{ .pos = bot_right, .dir = .{ .x = 0, .y = -1 } }));
+    var y: i64 = 1;
+    while (y < map_yend - 1) : (y += 1) {
+        const left_node = Node{ .pos = .{ .x = 0, .y = y }, .dir = .{ .x = 1, .y = 0 } };
+        const right_node = Node{ .pos = .{ .x = map_xend - 1, .y = y }, .dir = .{ .x = -1, .y = 0 } };
+        largest = @max(largest, try runConfig(allocator, map, left_node));
+        largest = @max(largest, try runConfig(allocator, map, right_node));
     }
 
-    var nodes = std.ArrayList(Node).init(allocator);
-    defer nodes.deinit();
-    try nodes.append(.{ .pos = .{ .x = 0, .y = 0 }, .dir = .{ .x = 1, .y = 0 } });
-
-    var res: u32 = 0;
-
-    while (nodes.popOrNull()) |node| {
-        node_loop: while (true) {
-            const len_y: usize = @intCast(node.pos.y);
-            const len_x: usize = @intCast(node.pos.x);
-            const id: usize = (len_y * map[0].len) + len_x;
-            if (!visited[id]) {
-                visited[id] = true;
-                res += 1;
-            }
-            switch (map[@intCast(node.pos.y)][@intCast(node.pos.x)]) {
-                '|' => if (node.dir.x != 0) {
-                    if (node.pos.y > 0) {
-                        try nodes.append(.{
-                            .pos = .{
-                                .x = node.pos.x,
-                                .y = node.pos.y - 1,
-                            },
-                            .dir = .{
-                                .x = 0,
-                                .y = -1,
-                            },
-                        });
-                    }
-                    if (node.pos.y < map.len - 1) {
-                        try nodes.append(.{
-                            .pos = .{
-                                .x = node.pos.x,
-                                .y = node.pos.y + 1,
-                            },
-                            .dir = .{
-                                .x = 0,
-                                .y = 1,
-                            },
-                        });
-                    }
-                    break :node_loop;
-                },
-                '-' => if (node.dir.y != 0) {
-                    if (node.pos.x > 0) {
-                        try nodes.append(.{
-                            .pos = .{
-                                .x = node.pos.x - 1,
-                                .y = node.pos.y,
-                            },
-                            .dir = .{
-                                .x = -1,
-                                .y = 0,
-                            },
-                        });
-                    }
-                    if (node.pos.x < map[0].len - 1) {
-                        try nodes.append(.{
-                            .pos = .{
-                                .x = node.pos.x + 1,
-                                .y = node.pos.y,
-                            },
-                            .dir = .{
-                                .x = 1,
-                                .y = 0,
-                            },
-                        });
-                    }
-                    break :node_loop;
-                },
-                '/' => {
-                    node = .{};
-                },
-                '\\' => {
-                    const t = &node.dir;
-                    t.*.x = node.dir.x + node.dir.y;
-                    t.*.y = node.dir.x - node.dir.y;
-                    t.*.x = node.dir.x - node.dir.y;
-                    t.*.x *= -1;
-                    t.*.y *= -1;
-                },
-                '.' => {},
-                else => @compileError("Unhandled character case"),
-            }
-            if ((node.pos.x == 0 and node.dir.x == -1) or
-                (node.pos.x == map[0].len - 1 and node.dir.x == 1) or
-                (node.pos.y == 0 and node.dir.y == -1) or
-                (node.pos.y == map.len - 1 and node.dir.y == 1)) break;
-            node.pos.x += node.dir.x;
-            node.pos.y += node.dir.y;
-        }
+    var x: i64 = 1;
+    while (x < map_xend - 1) : (x += 1) {
+        const top_node = Node{ .pos = .{ .x = x, .y = 0 }, .dir = .{ .x = 0, .y = 1 } };
+        const bot_node = Node{ .pos = .{ .x = x, .y = map_yend - 1 }, .dir = .{ .x = 0, .y = -1 } };
+        largest = @max(largest, try runConfig(allocator, map, top_node));
+        largest = @max(largest, try runConfig(allocator, map, bot_node));
     }
 
-    std.debug.print("Energized tiles: {d}\n", .{res});
+    std.debug.print("Energized tiles: {d}\n", .{largest});
 }
