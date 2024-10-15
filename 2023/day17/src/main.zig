@@ -1,12 +1,26 @@
 const std = @import("std");
 
-const Coord = struct { x: usize, y: usize };
+const Direction = enum { up, left, right, down };
 
 const Node = struct {
-    last: ?Coord,
-    pos: Coord,
+    pos: .{ u32, u32 },
+    px: usize,
+    py: usize,
+    dir: ?Direction,
     streak: u8,
 };
+
+fn nextToVisit(to_visit: []Node) ?u64 {
+    var result: ?u64 = null;
+    var res_dist: u64 = 0;
+    for (0.., to_visit) |i, node| {
+        if (node.dist != null and (result == null or node.dist.? < res_dist)) {
+            result = i;
+            res_dist = node.dist.?;
+        }
+    }
+    return result;
+}
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
@@ -31,5 +45,45 @@ pub fn main() !void {
     }
 
     const map = try array.toOwnedSlice();
-    const queue = std.DoublyLinkedList(Node){};
+    defer allocator.free(map);
+
+    const distances = try allocator.alloc([]?u32, map.len);
+    defer allocator.free(distances);
+    for (0..distances.len) |i|
+        distances[i] = try allocator.alloc(?u32, map[0].len);
+
+    const visited = std.ArrayList(Node).init(allocator);
+    defer visited.deinit();
+
+    const non_visited = std.ArrayList(Node).init(allocator);
+    defer non_visited.deinit();
+
+    for (0..map.len) |y| {
+        for (0..map[0].len) |x| {
+            try non_visited.append(.{
+                .pos = .{},
+                .dir = null,
+                .dist = null,
+                .streak = null,
+            });
+            const t = non_visited.items[0];
+            const y = t.pos;
+        }
+    }
+
+    non_visited.items[0] = .{
+        .pos = .{ .x = 0, .y = 0 },
+        .dir = null,
+        .dist = @intCast(map[0][0]),
+        .streak = 1,
+    };
+
+    while (nextToVisit(non_visited)) |i| {
+        const node = visited.swapRemove(i);
+        if (node.pos.x > 0) {}
+        try visited.append(node);
+    }
+
+    for (distances) |d|
+        allocator.free(d);
 }
