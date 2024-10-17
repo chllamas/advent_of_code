@@ -21,16 +21,36 @@ fn nextToVisit(unvisited_nodes: []const Node, distance_table: []const []const ?S
     return index;
 }
 
-fn updatedState(state: State, neighbor_state: ?State, flowing_direction: Direction) ?State {
+fn updatedState(state: State, neighbor_state: ?State, neighbor_heat: u32, flowing_direction: Direction) ?State {
     if (state.direction != flowing_direction or state.streak != 3) {
-        if (neighbor_state == null or state.dist + 1 < neighbor_state.?.dist)
+        if (neighbor_state == null or state.dist + neighbor_heat < neighbor_state.?.dist)
             return State{
-                .dist = state.dist + 1,
+                .dist = state.dist + neighbor_heat,
                 .direction = flowing_direction,
                 .streak = if (state.direction == flowing_direction or state.direction == Direction.any) state.streak + 1 else 1,
             };
     }
     return neighbor_state;
+}
+
+fn printStates(states_table: []const []const ?State) void {
+    for (states_table) |row| {
+        for (row) |state| {
+            if (state != null) {
+                std.debug.print(" ({s},{d:3}) ", .{ switch (state.?.direction) {
+                    Direction.left => " < ",
+                    Direction.right => " > ",
+                    Direction.up => " ^ ",
+                    Direction.down => " v ",
+                    else => " # ",
+                }, state.?.dist });
+            } else {
+                std.debug.print(" (???,???) ", .{});
+            }
+        }
+        std.debug.print("\n", .{});
+    }
+    std.debug.print("\n\n====\n\n", .{});
 }
 
 pub fn main() !void {
@@ -77,7 +97,7 @@ pub fn main() !void {
 
     not_visited.items[0] = .{ .x = 0, .y = 0 };
     states_table[0][0] = .{
-        .dist = @intCast(map[0][0] - '0'),
+        .dist = map[0][0] - '0',
         .streak = 1,
     };
 
@@ -85,44 +105,27 @@ pub fn main() !void {
         const node = not_visited.swapRemove(i);
         const state = states_table[node.y][node.x].?;
 
-        // left node
-        if (node.x > 0 and (state.direction != Direction.left or state.streak != 3)) {
-            if (states_table[node.y][node.x - 1]) |*left_node| {
-                if (state.dist + 1 < left_node.*.dist)
-                    left_node.* = .{
-                        .dist = state.dist + 1,
-                        .direction = Direction.left,
-                        .streak = if (state.direction == Direction.left or state.direction == Direction.any) state.streak + 1 else 1,
-                    };
-            } else {
-                states_table[node.y][node.x - 1] = State{
-                    .dist = state.dist + 1,
-                    .direction = Direction.left,
-                    .streak = if (state.direction == Direction.left or state.direction == Direction.any) state.streak + 1 else 1,
-                };
-            }
+        if (node.x > 0) {
+            const left_node = &states_table[node.y][node.x - 1];
+            left_node.* = updatedState(state, left_node.*, map[node.y][node.x - 1] - '0', Direction.left);
         }
 
-        // right node
-        if (node.x < map[0].len - 1 and (state.direction != Direction.right or state.streak != 3)) {
-            if (states_table[node.y][node.x + 1]) |*right_node| {
-                if (state.dist + 1 < right_node.*.dist)
-                    right_node.* = .{
-                        .dist = state.dist + 1,
-                        .direction = Direction.right,
-                        .streak = if (state.direction == Direction.right or state.direction == Direction.any) state.streak + 1 else 1,
-                    };
-            } else {
-                states_table[node.y][node.x + 1] = State{
-                    .dist = state.dist + 1,
-                    .direction = Direction.right,
-                    .streak = if (state.direction == Direction.right or state.direction == Direction.any) state.streak + 1 else 1,
-                };
-            }
+        if (node.x < map[0].len - 1) {
+            const right_node = &states_table[node.y][node.x + 1];
+            right_node.* = updatedState(state, right_node.*, map[node.y][node.x + 1] - '0', Direction.right);
         }
 
-        // up node
-        // down node
+        if (node.y > 0) {
+            const up_node = &states_table[node.y - 1][node.x];
+            up_node.* = updatedState(state, up_node.*, map[node.y - 1][node.x] - '0', Direction.up);
+        }
+
+        if (node.y < map.len - 1) {
+            const down_node = &states_table[node.y + 1][node.x];
+            down_node.* = updatedState(state, down_node.*, map[node.y + 1][node.x] - '0', Direction.down);
+        }
+
+        printStates(states_table);
     }
 
     const target_state = states_table[states_table.len - 1][states_table[0].len - 1];
