@@ -97,7 +97,7 @@ pub fn main() !void {
 
     not_visited.items[0] = .{ .x = 0, .y = 0 };
     states_table[0][0] = .{
-        .dist = map[0][0] - '0',
+        .dist = 0,
         .streak = 1,
     };
 
