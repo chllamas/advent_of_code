@@ -1,11 +1,9 @@
 const std = @import("std");
 
-const FF = [2]u8;
-const FlipFlopT = enum { sender, inverter, broadcaster };
+const FlipFlopT = enum { sender, inverter };
 const FlipFlop = union(FlipFlopT) {
-    sender: []FF,
-    inverter: []FF,
-    broadcaster: []FF,
+    sender: [][]const u8,
+    inverter: [][]const u8,
 };
 
 pub fn main() !void {
@@ -21,19 +19,26 @@ pub fn main() !void {
 
     _ = try file.readAll(buffer);
 
+    const bc = "broadcast";
     var flip_flops = std.StringHashMap(FlipFlop).init(allocator);
     defer flip_flops.deinit();
 
     var lines = std.mem.splitScalar(u8, buffer, '\n');
     while (lines.next()) |line| {
         if (line.len == 0) break;
-        switch (line[0]) {
-            '%' => {},
-            '&' => {},
-            else => {
-                const broadcaster = line[15..];
-                // split these and then grab their names to place on a flip flop
-            },
+        var iter = std.mem.splitSequence(u8, line, " -> ");
+        const name = iter.next().?;
+        var nodes = std.mem.splitSequence(u8, iter.next().?, ", ");
+        var arr = std.ArrayList([]const u8).init(allocator);
+        while (nodes.next()) |node| {
+            try arr.append(node);
+        }
+        switch (name[0]) {
+            '%' => try flip_flops.putNoClobber(name[1..], .{ .sender = try arr.toOwnedSlice() }),
+            '&' => try flip_flops.putNoClobber(name[1..], .{ .inverter = try arr.toOwnedSlice() }),
+            else => try flip_flops.putNoClobber(bc[0..], .{ .sender = try arr.toOwnedSlice() }),
         }
     }
+
+    // free the arrays that are the values of the hashmap of "flip_flops"
 }
