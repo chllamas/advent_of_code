@@ -3,7 +3,7 @@ const std = @import("std");
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const file = try std.fs.cwd().openFile("input.txt", .{});
+    const file = try std.fs.cwd().openFile("test.txt", .{});
     defer file.close();
 
     const file_size = try file.getEndPos();
@@ -28,20 +28,27 @@ pub fn main() !void {
     std.mem.sort(u32, adapters[0..], {}, comptime std.sort.asc(u32));
 
     var st: u32 = 0;
-    var one: u32 = 0;
-    var two: u32 = 0;
-    var three: u32 = 1;
+    // var one: u32 = 0;
+    // var two: u32 = 0;
+    // var three: u32 = 1;
+    var divergences: u32 = 0;
 
-    for (adapters) |x| {
-        const diff: u32 = x - st;
+    for (0.., adapters) |i, x| {
+        var count: u32 = 0;
+
+        if (x - st <= 3)
+            count += 1;
+
+        if (i < adapters.len - 1 and adapters[i + 1] - st <= 3)
+            count += 1;
+
+        if (i < adapters.len - 2 and adapters[i + 2] - st <= 3)
+            count += 1;
+
+        divergences += count - 1;
+
         st = x;
-        switch (diff) {
-            1 => one += 1,
-            2 => two += 1,
-            3 => three += 1,
-            else => @panic("Idk"),
-        }
     }
 
-    std.debug.print("one: {d}\ntwo: {d}\nthree: {d}\n", .{ one, two, three });
+    std.debug.print("result: {d}\n", .{divergences});
 }
