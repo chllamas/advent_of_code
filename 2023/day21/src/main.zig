@@ -5,9 +5,17 @@ const Coord = struct {
     y: usize,
 };
 
-const test_steps: u8 = 16;
+const test_steps: u8 = 6;
 const input_steps: u8 = 64;
-const this_steps = test_steps;
+const this_steps = input_steps;
+
+fn hasCoord(lst: []const Coord, x: usize, y: usize) bool {
+    for (lst) |*coord| {
+        if (coord.*.x == x and coord.*.y == y)
+            return true;
+    }
+    return false;
+}
 
 fn startingCoord(map: []const []const u8) Coord {
     for (0.., map) |y, row| {
@@ -32,7 +40,7 @@ fn createMap(allocator: std.mem.Allocator, buffer: []const u8) ![]const []const 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const file = try std.fs.cwd().openFile("test.txt", .{});
+    const file = try std.fs.cwd().openFile("input.txt", .{});
     defer file.close();
 
     const file_size = try file.getEndPos();
@@ -48,15 +56,27 @@ pub fn main() !void {
     var visit_queue = std.ArrayList(Coord).init(allocator);
     defer visit_queue.deinit();
 
+    var stack = std.ArrayList(Coord).init(allocator);
+    defer stack.deinit();
+
     try visit_queue.append(startingCoord(map));
 
-    var steps: u8 = 0;
-    while (steps < this_steps) : (steps += 1) {
-        const n = visit_queue.items.len;
-        for (0..n) |_| {
-            // we only pop the steps we can do *this* run
-            const coord = visit_queue.pop();
-            // BFS here safely
+    for (0..this_steps) |_| {
+        try stack.appendSlice(visit_queue.items);
+        visit_queue.clearRetainingCapacity();
+
+        while (stack.popOrNull()) |coord| {
+            if (coord.x > 0 and map[coord.y][coord.x - 1] != '#' and !hasCoord(visit_queue.items, coord.x - 1, coord.y))
+                try visit_queue.append(.{ .x = coord.x - 1, .y = coord.y });
+
+            if (coord.x < map[0].len - 1 and map[coord.y][coord.x + 1] != '#' and !hasCoord(visit_queue.items, coord.x + 1, coord.y))
+                try visit_queue.append(.{ .x = coord.x + 1, .y = coord.y });
+
+            if (coord.y < map.len - 1 and map[coord.y + 1][coord.x] != '#' and !hasCoord(visit_queue.items, coord.x, coord.y + 1))
+                try visit_queue.append(.{ .x = coord.x, .y = coord.y + 1 });
+
+            if (coord.y > 0 and map[coord.y - 1][coord.x] != '#' and !hasCoord(visit_queue.items, coord.x, coord.y - 1))
+                try visit_queue.append(.{ .x = coord.x, .y = coord.y - 1 });
         }
     }
 
