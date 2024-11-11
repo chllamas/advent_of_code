@@ -8,16 +8,16 @@ const Range = struct {
     d: u64,
 };
 
-fn parseRanges(ranges: *std.ArrayList(Range), buffer: []const u8) !void {
+fn parseRanges(ranges: *std.StringHashMap(Range), buffer: []const u8) !void {
     var lines = std.mem.splitScalar(u8, buffer, '\n');
     while (lines.next()) |line| {
         if (line.len == 0) break;
         var iter = std.mem.splitSequence(u8, line, ": ");
-        _ = iter.next();
+        const name = iter.next().?;
         var rangesIter = std.mem.splitSequence(u8, iter.next().?, " or ");
         var r1 = std.mem.splitScalar(u8, rangesIter.next().?, '-');
         var r2 = std.mem.splitScalar(u8, rangesIter.next().?, '-');
-        try ranges.*.append(.{
+        try ranges.*.putNoClobber(name, .{
             .a = try std.fmt.parseInt(u64, r1.next().?, 10),
             .b = try std.fmt.parseInt(u64, r1.next().?, 10),
             .c = try std.fmt.parseInt(u64, r2.next().?, 10),
@@ -29,7 +29,7 @@ fn parseRanges(ranges: *std.ArrayList(Range), buffer: []const u8) !void {
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const file = try std.fs.cwd().openFile("input.txt", .{});
+    const file = try std.fs.cwd().openFile("test.txt", .{});
     defer file.close();
 
     const file_size = try file.getEndPos();
@@ -41,12 +41,14 @@ pub fn main() !void {
 
     var blocks = std.mem.splitSequence(u8, buffer, "\n\n");
 
-    var ranges = std.ArrayList(Range).init(allocator);
+    var ranges = std.StringHashMap(Range).init(allocator);
     try parseRanges(&ranges, blocks.next().?);
     defer ranges.deinit();
 
+    // TODO: Include my ticket now
     _ = blocks.next().?; // ignore the your ticket for now
 
+    // TODO: error_rate not needed anymore
     var error_rate: u64 = 0;
 
     var nearby_tickets = std.mem.splitScalar(u8, blocks.next().?, '\n');
