@@ -8,8 +8,10 @@ const Range = struct {
     d: u64,
 };
 
-fn parseRanges(ranges: *std.StringHashMap(Range), buffer: []const u8) !void {
+fn parseRanges(ranges: *std.StringHashMap(Range), buffer: []const u8) !usize {
+    var count: usize = 0;
     var lines = std.mem.splitScalar(u8, buffer, '\n');
+
     while (lines.next()) |line| {
         if (line.len == 0) break;
         var iter = std.mem.splitSequence(u8, line, ": ");
@@ -17,6 +19,7 @@ fn parseRanges(ranges: *std.StringHashMap(Range), buffer: []const u8) !void {
         var rangesIter = std.mem.splitSequence(u8, iter.next().?, " or ");
         var r1 = std.mem.splitScalar(u8, rangesIter.next().?, '-');
         var r2 = std.mem.splitScalar(u8, rangesIter.next().?, '-');
+        count += 1;
         try ranges.*.putNoClobber(name, .{
             .a = try std.fmt.parseInt(u64, r1.next().?, 10),
             .b = try std.fmt.parseInt(u64, r1.next().?, 10),
@@ -24,6 +27,8 @@ fn parseRanges(ranges: *std.StringHashMap(Range), buffer: []const u8) !void {
             .d = try std.fmt.parseInt(u64, r2.next().?, 10),
         });
     }
+
+    return count;
 }
 
 pub fn main() !void {
@@ -42,30 +47,41 @@ pub fn main() !void {
     var blocks = std.mem.splitSequence(u8, buffer, "\n\n");
 
     var ranges = std.StringHashMap(Range).init(allocator);
-    try parseRanges(&ranges, blocks.next().?);
+    const num_ranges = try parseRanges(&ranges, blocks.next().?);
     defer ranges.deinit();
 
-    // TODO: Include my ticket now
-    _ = blocks.next().?; // ignore the your ticket for now
-
-    // TODO: error_rate not needed anymore
-    var error_rate: u64 = 0;
-
-    var nearby_tickets = std.mem.splitScalar(u8, blocks.next().?, '\n');
-    _ = nearby_tickets.next(); // ignore "nearby tickets:" line
-    while (nearby_tickets.next()) |ticket| {
-        if (ticket.len == 0) continue;
-        var nums = std.mem.splitScalar(u8, ticket, ',');
-        nums_loop: while (nums.next()) |x_str| {
-            const x = try std.fmt.parseInt(u64, x_str, 10);
-            for (ranges.items) |*range| {
-                if ((x >= range.*.a and x <= range.*.b) or (x >= range.*.c and x <= range.*.d)) {
-                    continue :nums_loop;
-                }
-            }
-            error_rate += x;
+    var range_configuration = try allocator.alloc(std.ArrayList([]const u8), num_ranges);
+    for (range_configuration) |*config| {
+        var ranges_iter = ranges.keyIterator();
+        config.* = std.ArrayList(*[]const u8).init(allocator);
+        while (ranges_iter.next()) |range| {
+            try config.*.append(range);
         }
     }
 
-    std.debug.print("Error rate: {}\n", .{error_rate});
+    var valid_tickets = std.ArrayList([]const u8).init(allocator);
+    try valid_tickets.append(blocks.next().?[13..]); // start by appending my ticket which is valid by default
+    defer valid_tickets.deinit();
+
+    var nearby_tickets_iter = std.mem.splitScalar(u8, blocks.next().?[16..], '\n');
+    tickets_loop: while (nearby_tickets_iter.next()) |ticket| {
+        if (ticket.len == 0) continue;
+
+        var fields_iter = std.mem.splitScalar(u8, ticket, ',');
+        while (fields_iter.next()) |x_str| {
+            const x = try std.fmt.parseInt(u64, x_str, 10);
+
+            for (ranges.items) |*range| {
+                if (!((x >= range.*.a and x <= range.*.b) or (x >= range.*.c and x <= range.*.d))) {
+                    continue :tickets_loop;
+                }
+            }
+
+            // TODO: Modify valid spots for the fields
+
+            try valid_tickets.append(ticket);
+        }
+    }
+
+    // TODO: Free the range configurations
 }
