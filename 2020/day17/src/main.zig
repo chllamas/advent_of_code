@@ -51,6 +51,12 @@ const Coord = struct {
         }
         return count == 3;
     }
+
+    fn hash(self: Coord) u64 {
+        const x: u32 = @bitCast(self.x);
+        const xu: u96 = @intCast(x);
+        return xu;
+    }
 };
 
 pub fn main() !void {
@@ -84,7 +90,7 @@ pub fn main() !void {
                     for (-1..2) |dx| {
                         if (dx == 0 and dy == 0 and dz == 0) continue;
                         // TODO:
-                        // [ ] verify is inactive cube
+                        // verify is inactive cube
                         // check if can become active
                     }
                 }
