@@ -54,8 +54,17 @@ const Coord = struct {
 
     fn hash(self: Coord) u64 {
         const x: u32 = @bitCast(self.x);
-        const xu: u96 = @intCast(x);
-        return xu;
+        const y: u32 = @bitCast(self.y);
+        const z: u32 = @bitCast(self.z);
+        return @as(u96, x) ^ (@as(u96, y) << 32) ^ (@as(u96, z) << 64);
+    }
+
+    fn add(self: Coord, other: Coord) Coord {
+        return .{
+            self.x + other.x,
+            self.y + other.y,
+            self.z + other.z,
+        };
     }
 };
 
@@ -63,42 +72,51 @@ pub fn main() !void {
     const input = test_input[0..];
     const allocator = std.heap.page_allocator;
 
-    var active_cubes = std.ArrayList(Coord).init(allocator);
-    defer active_cubes.deinit();
+    var actives_cubes_hashmap = std.AutoHashMap(u96, Coord).init(allocator);
+    defer actives_cubes_hashmap.deinit();
 
     for (0.., input) |y, row| {
         for (0.., row) |x, ch| {
             if (ch == '#') {
-                try active_cubes.append(.{
+                const coord = Coord{
                     .x = x,
                     .y = y,
                     .z = 0,
-                });
+                };
+                try actives_cubes_hashmap.putNoClobber(coord.hash(), coord);
             }
         }
     }
 
     for (0..6) |_| {
-        var buffer = std.ArrayList(Coord).init(allocator);
+        var buf = std.AutoHashMap(u96, Coord).init(allocator);
 
-        for (active_cubes.items) |active_cube| {
-            if (active_cube.remainsActive(&active_cubes))
-                try buffer.append(active_cube);
+        var active_iter = actives_cubes_hashmap.valueIterator();
+        while (active_iter.next()) |cube| {
+            if (cube.*.remainsActive(cube))
+                try buf.put(cube.*.hash(), cube.*);
 
             for (-1..2) |dz| {
                 for (-1..2) |dy| {
-                    for (-1..2) |dx| {
+                    inactive_loop: for (-1..2) |dx| {
                         if (dx == 0 and dy == 0 and dz == 0) continue;
-                        // TODO:
-                        // verify is inactive cube
-                        // check if can become active
+                        const neighbor = cube.*.add(.{
+                            .x = @intCast(dx),
+                            .y = @intCast(dy),
+                            .z = @intCast(dz),
+                        });
+
+                        if (!actives_cubes_hashmap.contains(neighbor.hash())) {
+                            // TODO:
+                            // check if can become active
+                        }
                     }
                 }
             }
         }
 
-        active_cubes.deinit();
-        active_cubes = buffer;
+        actives_cubes_hashmap.deinit();
+        actives_cubes_hashmap = buf;
     }
 
     std.debug.print("Cubes left: {}\n", .{active_cubes.items.len});

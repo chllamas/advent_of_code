@@ -1,3 +1,6 @@
+runlua:
+	luajit main.lua
+
 run:
 	zig run src/main.zig
 
