@@ -30,13 +30,13 @@ pub fn main() !void {
         try lst.append(line);
     }
 
+    const graph = try lst.toOwnedSlice();
+    defer allocator.free(graph);
+
     var visited = std.AutoHashMap(usize, bool).init(allocator);
     defer visited.deinit();
 
     var queue = Queue{};
-
-    const graph = try lst.toOwnedSlice();
-    defer allocator.free(graph);
 
     // Get first node into the queue
     for (0.., graph[0]) |i, ch| {
