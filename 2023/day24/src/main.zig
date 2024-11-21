@@ -52,4 +52,15 @@ pub fn main() !void {
     }
 
     const vectors = try vectors_list.toOwnedSlice();
+
+    // NOTE: Not iterating to last one since last one doesn't match with any other after
+    for (0..vectors.len - 1) |i| {
+        const vec1 = vectors[i];
+
+        for (vectors[i + 1 ..]) |vec2| {
+            // TODO: Check if they intersect within the thingy
+            // Gaussian matrices
+            // Matrix inversion just look at what was generated
+        }
+    }
 }
