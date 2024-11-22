@@ -5,7 +5,7 @@ const CoordNum = f64;
 const Coord = struct {
     x: CoordNum,
     y: CoordNum,
-    z: CoordNum,
+    // z: CoordNum,
 };
 
 const Vector = struct {
@@ -19,7 +19,7 @@ fn parseCoord(buffer: []const u8) !Coord {
     return Coord{
         .x = try std.fmt.parseInt(CoordNum, iter.next().?, 10),
         .y = try std.fmt.parseInt(CoordNum, iter.next().?, 10),
-        .z = try std.fmt.parseInt(CoordNum, iter.next().?, 10),
+        // .z = try std.fmt.parseInt(CoordNum, iter.next().?, 10),
     };
 }
 
@@ -58,6 +58,20 @@ pub fn main() !void {
         const vec1 = vectors[i];
 
         for (vectors[i + 1 ..]) |vec2| {
+            const p1 = vec1.position;
+            const p2 = vec2.position;
+            const d1 = vec1.direction;
+            const d2 = vec2.direction;
+
+            const a_matrix = [4]CoordNum{ d1.x, -d2.y, d1.y, -d2.x }; // 2x2 matrix
+            const b_matrix = [2]CoordNum{ p2.x - p1.x, p2.y - p1.y }; // 1 x 2 matrix
+
+            const determinant: CoordNum = (a_matrix[0] * a_matrix[2]) - (a_matrix[1] * a_matrix[3]);
+            if (determinant == 0)
+                continue;
+
+            const a_inverse = [4]CoordNum{ a_matrix[0] / determinant, a_matrix[1] / determinant, a_matrix[2] / determinant, a_matrix[3] / determinant };
+
             // TODO: Check if they intersect within the thingy
             // Gaussian matrices
             // Matrix inversion just look at what was generated
