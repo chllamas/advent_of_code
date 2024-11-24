@@ -1,5 +1,5 @@
 run:
-	zig run src/main.zig
+	luajit main.lua
 
 push:
 	git add .
