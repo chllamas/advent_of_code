@@ -1,6 +1,5 @@
 run:
-	zig cc -o a.out main.c
-	./a.out
+	zig run src/main.zig
 
 push:
 	git add .
