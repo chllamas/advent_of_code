@@ -59,4 +59,9 @@ pub fn main() !void {
 
     var capture_hashmap = std.AutoHashMap(i64, bool).init(allocator);
     defer capture_hashmap.deinit();
+
+    const target = 10; // y = 10
+    const puzzle = test_puzzle;
+
+    // TODO: Iterate through our sensors and start blocking out would be coords, and adding any of our target for the puzzle
 }
