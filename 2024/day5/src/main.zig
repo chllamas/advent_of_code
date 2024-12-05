@@ -1,13 +1,16 @@
 const std = @import("std");
 
 fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
+    var valid_updates = std.ArrayList([]u32).init(allocator);
+    defer valid_updates.deinit();
+
     // The rules are for what must be in front of the key
     var rules = std.AutoHashMap(u32, []u32).init(allocator);
     defer rules.deinit();
 
     var chunks = std.mem.splitSequence(u8, buffer, "\n\n");
     var page_ordering_lines = std.mem.splitScalar(u8, chunks.next().?, '\n');
-    // var update_lines = std.mem.splitScalar(u8, chunks.next().?, '\n');
+    var update_lines = std.mem.splitScalar(u8, chunks.next().?, '\n');
 
     while (page_ordering_lines.next()) |rule_str| {
         var iter = std.mem.splitScalar(u8, rule_str, '|');
@@ -26,13 +29,23 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
         }
     }
 
-    var iter = rules.iterator();
-    while (iter.next()) |entry| {
-        std.debug.print("{} must be before: ", .{entry.key_ptr.*});
-        for (entry.value_ptr.*) |val| {
-            std.debug.print("{}, ", .{val});
+    update_loop: while (update_lines.next()) |update_str| {
+        var visited = std.ArrayList(u32).init(allocator);
+        defer visited.deinit();
+
+        var iter = std.mem.splitScalar(u8, update_str, ',');
+        while (iter.next()) |str| {
+            const val = try std.fmt.parseInt(u32, str, 10);
+            try visited.append(val);
+            if (rules.get(val)) |my_rules| {
+                for (visited.items) |past_page| {
+                    for (my_rules) |r| {
+                        if (past_page == r)
+                            continue :update_loop;
+                    }
+                }
+            }
         }
-        std.debug.print("\n", .{});
     }
 }
 
