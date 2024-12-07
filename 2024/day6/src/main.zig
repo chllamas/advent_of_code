@@ -35,46 +35,77 @@ fn findStartPosition(graph: []const []const u8) Coordinate {
 }
 
 // returns null when we are leaving the map with this
-fn nextStep(graph: []const []const u8, position: Coordinate, direction: Direction) ?Guard {
-    switch (direction) {
-        .up => if (position.y == 0)
+fn nextStep(graph: []const []const u8, guard: Guard) ?Guard {
+    switch (guard.dir) {
+        .up => if (guard.pos.y == 0)
             return null
         else
-            return if (graph[position.y - 1][position.x] == '#')
-                nextStep(graph, position, Direction.right)
+            return if (graph[guard.pos.y - 1][guard.pos.x] == '#')
+                nextStep(graph, .{ .pos = guard.pos, .dir = Direction.right })
             else
                 .{
-                    .pos = .{ .x = position.x, .y = position.y - 1 },
-                    .dir = Direction.up,
-                    // TODO: FIx the Guard retursn
+                    .pos = .{ .x = guard.pos.x, .y = guard.pos.y - 1 },
+                    .dir = guard.dir,
                 },
-        .down => if (position.y == graph.len - 1)
+
+        .down => if (guard.pos.y == graph.len - 1)
             return null
         else
-            return if (graph[position.y + 1][position.x] == '#')
-                nextStep(graph, position, Direction.left)
+            return if (graph[guard.pos.y + 1][guard.pos.x] == '#')
+                nextStep(graph, .{ .pos = guard.pos, .dir = Direction.left })
             else
-                .{ .x = position.x, .y = position.y + 1 },
-        .left => if (position.x == 0)
+                .{
+                    .pos = .{ .x = guard.pos.x, .y = guard.pos.y + 1 },
+                    .dir = guard.dir,
+                },
+
+        .left => if (guard.pos.x == 0)
             return null
         else
-            return if (graph[position.y][position.x - 1] == '#')
-                nextStep(graph, position, Direction.up)
+            return if (graph[guard.pos.y][guard.pos.x - 1] == '#')
+                nextStep(graph, .{ .pos = guard.pos, .dir = Direction.up })
             else
-                .{ .x = position.x - 1, .y = position.y },
-        .right => if (position.x == graph[0].len - 1)
+                .{
+                    .pos = .{ .x = guard.pos.x - 1, .y = guard.pos.y },
+                    .dir = guard.dir,
+                },
+
+        .right => if (guard.pos.x == graph[0].len - 1)
             return null
         else
-            return if (graph[position.y][position.x + 1] == '#')
-                nextStep(graph, position, Direction.down)
+            return if (graph[guard.pos.y][guard.pos.x + 1] == '#')
+                nextStep(graph, .{ .pos = guard.pos, .dir = Direction.down })
             else
-                .{ .x = position.x + 1, .y = position.y },
+                .{
+                    .pos = .{ .x = guard.pos.x + 1, .y = guard.pos.y },
+                    .dir = guard.dir,
+                },
     }
 }
 
-fn part1(graph: []const []const u8) !void {
-    var guard = Guard{ .pos = findStartPosition(graph), .dir = Direction.up };
-    while (guard.pos) |position| {}
+fn encodeCoordinate(graph: []const []const u8, coord: Coordinate) usize {
+    return (coord.y * graph.len) + coord.x;
+}
+
+fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
+    var count: u32 = 0;
+
+    const graph = try createGraph(allocator, buffer);
+    defer allocator.free(graph);
+
+    var visited = allocator.alloc(bool, graph.len * graph[0].len);
+    defer allocator.free(visited);
+
+    var _guard: ?Guard = Guard{ .pos = findStartPosition(graph), .dir = Direction.up };
+    while (_guard) |guard| {
+        defer _guard = nextStep(graph, guard);
+        const index = encodeCoordinate(graph, guard.pos);
+        if (!visited[index]) {
+            visited[index] = true;
+            count += 1;
+        }
+    }
+    std.debug.print("Visited: {}\n", .{count});
 }
 
 pub fn main() !void {
@@ -90,5 +121,5 @@ pub fn main() !void {
 
     _ = try file.readAll(buffer);
 
-    try part1(try createGraph(allocator, buffer));
+    try part1(allocator, buffer);
 }
