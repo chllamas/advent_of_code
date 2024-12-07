@@ -1,10 +1,12 @@
 const std = @import("std");
 
 const Direction = enum { up, left, down, right };
+
 const Coordinate = struct {
     x: usize,
     y: usize,
 };
+
 const Guard = struct {
     pos: Coordinate,
     dir: Direction,
@@ -34,7 +36,6 @@ fn findStartPosition(graph: []const []const u8) Coordinate {
     @panic("Unreachable: Start position not found\n");
 }
 
-// returns null when we are leaving the map with this
 fn nextStep(graph: []const []const u8, guard: Guard) ?Guard {
     switch (guard.dir) {
         .up => if (guard.pos.y == 0)
@@ -83,35 +84,32 @@ fn nextStep(graph: []const []const u8, guard: Guard) ?Guard {
     }
 }
 
-fn encodeCoordinate(graph: []const []const u8, coord: Coordinate) usize {
-    return (coord.y * graph.len) + coord.x;
-}
-
 fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     var count: u32 = 0;
 
     const graph = try createGraph(allocator, buffer);
     defer allocator.free(graph);
 
-    var visited = allocator.alloc(bool, graph.len * graph[0].len);
+    var visited = try allocator.alloc(bool, graph.len * graph[0].len);
     defer allocator.free(visited);
 
     var _guard: ?Guard = Guard{ .pos = findStartPosition(graph), .dir = Direction.up };
     while (_guard) |guard| {
         defer _guard = nextStep(graph, guard);
-        const index = encodeCoordinate(graph, guard.pos);
+        const index = (guard.pos.y * graph.len) + guard.pos.x;
         if (!visited[index]) {
             visited[index] = true;
             count += 1;
         }
     }
+
     std.debug.print("Visited: {}\n", .{count});
 }
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const file = try std.fs.cwd().openFile("test.txt", .{});
+    const file = try std.fs.cwd().openFile("input.txt", .{});
     defer file.close();
 
     const file_size = try file.getEndPos();
