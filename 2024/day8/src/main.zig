@@ -5,18 +5,40 @@ const Coord = struct {
     y: usize,
 };
 
-const AntennaHashMap = std.AutoHashMap(u8, std.ArrayList(Coord));
+const AntennaHashMap = std.AutoHashMap(u8, []Coord);
 
 const AntennaList = struct {
-    antennas: *AntennaHashMap,
+    allocator: std.mem.Allocator,
+    antennas: AntennaHashMap,
 
-    fn addAntenna(self: *AntennaList, key: u8, newCoord: Coord) !void {
-        if (self.*.antennas.*.get(key)) |*arr| {
-            try arr.*.append(newCoord);
+    fn init(allocator: std.mem.Allocator) AntennaList {
+        return AntennaList{
+            .allocator = allocator,
+            .antennas = AntennaHashMap.init(allocator),
+        };
+    }
+
+    // TODO: Change AntennaList Self to a pointer
+    fn addAntenna(self: AntennaList, key: u8, newCoord: Coord) !void {
+        if (self.antennas.get(key)) |arr| {
+            if (self.allocator.resize(arr, 1)) {
+                arr[arr.len - 1] = newCoord;
+            } else {
+                var new_arr = try self.allocator.alloc(Coord, arr.len + 1);
+                std.mem.copyForwards(Coord, new_arr, arr);
+                new_arr[new_arr.len - 1] = newCoord;
+                self.allocator.free(arr);
+                try self.antennas.put(key, new_arr);
+            }
         } else {
-            try self.*.antennas.*.put(key, std.ArrayList(Coord).init(self.*.antennas.allocator));
-            try self.*.addAntenna(key, newCoord);
+            var arr = try self.allocator.alloc(Coord, 1);
+            arr[0] = newCoord;
+            try self.antennas.putNoClobber(key, arr);
         }
+    }
+
+    fn deinit() void {
+        // TODO: Free everything
     }
 };
 
@@ -34,8 +56,8 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     const graph = try createGraph(allocator, buffer);
     defer allocator.free(graph);
 
-    var hashmap = AntennaHashMap.init(allocator);
-    var antennas = AntennaList{ .antennas = &hashmap };
+    var antennas = AntennaList.init(allocator);
+    defer antennas.deinit();
     try antennas.addAntenna('a', .{ .x = 0, .y = 1 });
     try antennas.addAntenna('a', .{ .x = 2, .y = 12 });
     try antennas.addAntenna('b', .{ .x = 2, .y = 12 });
