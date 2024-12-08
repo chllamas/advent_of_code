@@ -7,40 +7,23 @@ const Coord = struct {
 
 const AntennaHashMap = std.AutoHashMap(u8, []Coord);
 
-const AntennaList = struct {
-    allocator: std.mem.Allocator,
-    antennas: AntennaHashMap,
-
-    fn init(allocator: std.mem.Allocator) AntennaList {
-        return AntennaList{
-            .allocator = allocator,
-            .antennas = AntennaHashMap.init(allocator),
-        };
-    }
-
-    // TODO: Change AntennaList Self to a pointer
-    fn addAntenna(self: AntennaList, key: u8, newCoord: Coord) !void {
-        if (self.antennas.get(key)) |arr| {
-            if (self.allocator.resize(arr, 1)) {
-                arr[arr.len - 1] = newCoord;
-            } else {
-                var new_arr = try self.allocator.alloc(Coord, arr.len + 1);
-                std.mem.copyForwards(Coord, new_arr, arr);
-                new_arr[new_arr.len - 1] = newCoord;
-                self.allocator.free(arr);
-                try self.antennas.put(key, new_arr);
-            }
+fn addAntenna(hashmap: *AntennaHashMap, key: u8, newCoord: Coord) !void {
+    if (hashmap.*.get(key)) |arr| {
+        if (hashmap.*.allocator.resize(arr, 1)) {
+            arr[arr.len - 1] = newCoord;
         } else {
-            var arr = try self.allocator.alloc(Coord, 1);
-            arr[0] = newCoord;
-            try self.antennas.putNoClobber(key, arr);
+            var new_arr = try hashmap.*.allocator.alloc(Coord, arr.len + 1);
+            std.mem.copyForwards(Coord, new_arr, arr);
+            new_arr[new_arr.len - 1] = newCoord;
+            hashmap.*.allocator.free(arr);
+            try hashmap.*.put(key, new_arr);
         }
+    } else {
+        var arr = try hashmap.*.allocator.alloc(Coord, 1);
+        arr[0] = newCoord;
+        try hashmap.*.putNoClobber(key, arr);
     }
-
-    fn deinit() void {
-        // TODO: Free everything
-    }
-};
+}
 
 fn createGraph(allocator: std.mem.Allocator, buffer: []const u8) ![]const []const u8 {
     var list = std.ArrayList([]const u8).init(allocator);
@@ -56,17 +39,16 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     const graph = try createGraph(allocator, buffer);
     defer allocator.free(graph);
 
-    var antennas = AntennaList.init(allocator);
-    defer antennas.deinit();
-    try antennas.addAntenna('a', .{ .x = 0, .y = 1 });
-    try antennas.addAntenna('a', .{ .x = 2, .y = 12 });
-    try antennas.addAntenna('b', .{ .x = 2, .y = 12 });
-    try antennas.addAntenna('a', .{ .x = 5, .y = 3 });
+    var antennas = AntennaHashMap.init(allocator);
+    try addAntenna(&antennas, 'a', .{ .x = 0, .y = 1 });
+    try addAntenna(&antennas, 'a', .{ .x = 2, .y = 12 });
+    try addAntenna(&antennas, 'b', .{ .x = 2, .y = 12 });
+    try addAntenna(&antennas, 'a', .{ .x = 5, .y = 3 });
 
-    var iter = antennas.antennas.iterator();
+    var iter = antennas.iterator();
     while (iter.next()) |entry| {
         std.debug.print("{} | ", .{entry.key_ptr.*});
-        for (entry.value_ptr.*.items) |v| {
+        for (entry.value_ptr.*) |v| {
             std.debug.print("({}, {}) ", .{ v.x, v.y });
         }
         std.debug.print("\n", .{});
