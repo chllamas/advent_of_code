@@ -1,23 +1,19 @@
 const std = @import("std");
 
 const Coord = struct {
-    x: usize,
-    y: usize,
+    x: i32,
+    y: i32,
 };
 
 const AntennaHashMap = std.AutoHashMap(u8, []Coord);
 
 fn addAntenna(hashmap: *AntennaHashMap, key: u8, newCoord: Coord) !void {
     if (hashmap.*.get(key)) |arr| {
-        if (hashmap.*.allocator.resize(arr, 1)) {
-            arr[arr.len - 1] = newCoord;
-        } else {
-            var new_arr = try hashmap.*.allocator.alloc(Coord, arr.len + 1);
-            std.mem.copyForwards(Coord, new_arr, arr);
-            new_arr[new_arr.len - 1] = newCoord;
-            hashmap.*.allocator.free(arr);
-            try hashmap.*.put(key, new_arr);
-        }
+        var new_arr = try hashmap.*.allocator.alloc(Coord, arr.len + 1);
+        std.mem.copyForwards(Coord, new_arr, arr);
+        new_arr[new_arr.len - 1] = newCoord;
+        hashmap.*.allocator.free(arr);
+        try hashmap.*.put(key, new_arr);
     } else {
         var arr = try hashmap.*.allocator.alloc(Coord, 1);
         arr[0] = newCoord;
@@ -35,23 +31,61 @@ fn createGraph(allocator: std.mem.Allocator, buffer: []const u8) ![]const []cons
     return try list.toOwnedSlice();
 }
 
+fn markVisited(graph: []const []const u8, visited: *[]bool, coord: Coord) bool {
+    if (coord.x < 0 or coord.y < 0 or coord.x >= graph[0].len or coord.y >= graph.len) return false;
+    const x: usize = @abs(coord.x);
+    const y: usize = @abs(coord.y);
+    const index: usize = (y * graph[0].len) + x;
+    if (!visited.*[index]) {
+        visited.*[index] = true;
+        return true;
+    }
+    return false;
+}
+
 fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     const graph = try createGraph(allocator, buffer);
     defer allocator.free(graph);
 
-    var antennas = AntennaHashMap.init(allocator);
-    try addAntenna(&antennas, 'a', .{ .x = 0, .y = 1 });
-    try addAntenna(&antennas, 'a', .{ .x = 2, .y = 12 });
-    try addAntenna(&antennas, 'b', .{ .x = 2, .y = 12 });
-    try addAntenna(&antennas, 'a', .{ .x = 5, .y = 3 });
+    var count: u32 = 0;
+    defer std.debug.print("Result: {}\n", .{count});
 
-    var iter = antennas.iterator();
-    while (iter.next()) |entry| {
-        std.debug.print("{} | ", .{entry.key_ptr.*});
-        for (entry.value_ptr.*) |v| {
-            std.debug.print("({}, {}) ", .{ v.x, v.y });
+    var visited = try allocator.alloc(bool, graph.len * graph[0].len);
+    defer allocator.free(visited);
+
+    var antennas = AntennaHashMap.init(allocator);
+    for (0.., graph) |y, row| {
+        for (0.., row) |x, key| {
+            if (key != '.')
+                try addAntenna(&antennas, key, .{ .x = @intCast(x), .y = @intCast(y) });
         }
-        std.debug.print("\n", .{});
+    }
+
+    var antennas_iter = antennas.iterator();
+    while (antennas_iter.next()) |_batch| {
+        const batch = _batch.value_ptr.*;
+        for (0.., batch) |n, c1| {
+            if (n == batch.len - 1) break;
+            for (batch[n + 1 ..]) |c2| {
+                const dx: i32 = @intCast(@abs(c1.x - c2.x));
+                const dy: i32 = @intCast(@abs(c1.y - c2.y));
+                const diffx1: i32 = @divExact(c1.x - c2.x, dx);
+                const diffx2: i32 = @divExact(c2.x - c1.x, dx);
+                const diffy1: i32 = @divExact(c1.y - c2.y, dy);
+                const diffy2: i32 = @divExact(c2.y - c1.y, dy);
+                const a1 = Coord{
+                    .x = c1.x + (diffx1 * dx),
+                    .y = c1.y + (diffy1 * dy),
+                };
+                const a2 = Coord{
+                    .x = c2.x + (diffx2 * dx),
+                    .y = c2.y + (diffy2 * dy),
+                };
+
+                count += if (markVisited(graph, &visited, a1)) 1 else 0;
+                count += if (markVisited(graph, &visited, a2)) 1 else 0;
+            }
+        }
     }
 }
 
