@@ -73,17 +73,29 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
                 const diffx2: i32 = @divExact(c2.x - c1.x, dx);
                 const diffy1: i32 = @divExact(c1.y - c2.y, dy);
                 const diffy2: i32 = @divExact(c2.y - c1.y, dy);
-                const a1 = Coord{
-                    .x = c1.x + (diffx1 * dx),
-                    .y = c1.y + (diffy1 * dy),
-                };
-                const a2 = Coord{
-                    .x = c2.x + (diffx2 * dx),
-                    .y = c2.y + (diffy2 * dy),
-                };
+                var cur_a1: Coord = c1;
+                var cur_a2: Coord = c2;
+                while (true) {
+                    const a1 = Coord{
+                        .x = cur_a1.x + (diffx1 * dx),
+                        .y = cur_a1.y + (diffy1 * dy),
+                    };
+                    defer cur_a1 = a1;
 
-                count += if (markVisited(graph, &visited, a1)) 1 else 0;
-                count += if (markVisited(graph, &visited, a2)) 1 else 0;
+                    const a2 = Coord{
+                        .x = cur_a2.x + (diffx2 * dx),
+                        .y = cur_a2.y + (diffy2 * dy),
+                    };
+                    defer cur_a2 = a2;
+
+                    const in_a = markVisited(graph, &visited, a1);
+                    const in_b = markVisited(graph, &visited, a2);
+
+                    if (!in_a and !in_b) break;
+
+                    count += if (in_a) 1 else 0;
+                    count += if (in_b) 1 else 0;
+                }
             }
         }
     }
@@ -92,7 +104,7 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const file = try std.fs.cwd().openFile("input.txt", .{});
+    const file = try std.fs.cwd().openFile("test.txt", .{});
     defer file.close();
 
     const file_size = try file.getEndPos();
