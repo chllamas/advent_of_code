@@ -67,40 +67,38 @@ fn findFirstDot(map: Graph, pos: Coord, dir: Direction) ?Coord {
     };
 }
 
+fn moveRobot(map: Graph, _rbt: Coord, dir: Direction) Coord {
+    var rbt = _rbt;
+    const nxt = rbt.shift(dir);
+    switch (map[nxt.y][nxt.x]) {
+        '.' => {
+            swap(map, rbt, nxt);
+            rbt = nxt;
+        },
+        'O' => if (findFirstDot(map, nxt.shift(dir), dir)) |dot| {
+            swap(map, nxt, dot);
+            swap(map, nxt, rbt);
+            rbt = nxt;
+        },
+        else => {},
+    }
+    return rbt;
+}
+
 fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     var map_split = std.mem.splitSequence(u8, buffer, "\n\n");
 
     const map = try createMutableGraph(allocator, map_split.next().?);
     defer freeGraph(allocator, map);
 
-    // robot
     var rbt = initMap(map);
-
     const instructions = map_split.next().?;
-    for (instructions) |instr| switch (instr) {
-        '<' => {
-            // TODO: Put this into a function to use for later
-            // Func only needs map, dir, and rbt to process
-            const dir = Direction.left;
-
-            const nxt = rbt.shift(dir);
-            switch (map[nxt.y][nxt.x]) {
-                '.' => {
-                    swap(map, rbt, nxt);
-                    rbt = nxt;
-                },
-                'O' => if (findFirstDot(map, nxt.shift(dir), dir)) |dot| {
-                    swap(map, nxt, dot);
-                    swap(map, nxt, rbt);
-                    rbt = nxt;
-                },
-                else => {},
-            }
-        },
-        '^' => {},
-        'v' => {},
-        '>' => {},
-        else => {},
+    for (instructions) |instr| rbt = switch (instr) {
+        '<' => moveRobot(map, rbt, .left),
+        '^' => moveRobot(map, rbt, .up),
+        '>' => moveRobot(map, rbt, .right),
+        'v' => moveRobot(map, rbt, .down),
+        else => rbt,
     };
 
     std.debug.print("Result: {}\n", .{calculateGoods(map)});
@@ -109,7 +107,7 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const file = try std.fs.cwd().openFile("test.txt", .{});
+    const file = try std.fs.cwd().openFile("input.txt", .{});
     defer file.close();
 
     const file_size = try file.getEndPos();
