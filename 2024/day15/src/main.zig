@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const CoordList = std.ArrayList(Coord);
+const CoordList = []Coord;
 const Direction = enum { left, right, up, down };
 const Graph = [][]u8;
 const Coord = struct {
@@ -83,37 +83,32 @@ fn swap(map: Graph, a: Coord, b: Coord) void {
     map[b.y][b.x] = t;
 }
 
-fn findFirstDot(map: Graph, pos: Coord, dir: Direction) ?Coord {
+fn getDependencies(map: Graph, deps: *std.ArrayList(Coord), pos: Coord, dir: Direction) !bool {
     return switch (map[pos.y][pos.x]) {
-        '#' => null,
-        '.' => pos,
-        else => findFirstDot(map, pos.shift(dir), dir),
+        '.' => true,
+        '#' => false,
+        'O' => if (try getDependencies(map, deps, pos.shift(dir), dir)) o_check: {
+            try deps.append(pos);
+            break :o_check true;
+        } else false,
+        '[', ']' => wide_check: {
+            // TODO: Get the vertical dependencies to close off boxes into a list
+            // How do I avoid check upper boxes without checking twice
+            break :wide_check true;
+        },
+        else => unreachable,
     };
 }
 
-fn canMove(map: Graph, pos: Coord, dir: Direction) !?CoordList {
-    return switch (map[pos.y][pos.x]) {
-        '.' => CoordList.init(std.heap.page_allocator),
-        'O' => if (try canMove(map, pos.shift(dir), dir)) |lst| {} else null,
-        else => null,
-    };
-}
-
-// TODO: UPdate this to use a dependency style
-fn moveRobot(map: Graph, _rbt: Coord, dir: Direction) Coord {
-    var rbt = _rbt;
-    const nxt = rbt.shift(dir);
-    switch (map[nxt.y][nxt.x]) {
-        '.' => {
-            swap(map, rbt, nxt);
-            rbt = nxt;
-        },
-        'O' => if (findFirstDot(map, nxt.shift(dir), dir)) |dot| {
-            swap(map, nxt, dot);
-            swap(map, nxt, rbt);
-            rbt = nxt;
-        },
-        else => {},
+fn moveRobot(map: Graph, rbt: Coord, dir: Direction) !Coord {
+    var list = std.ArrayList(Coord).init(std.heap.page_allocator);
+    defer list.deinit();
+    if (try getDependencies(map, &list, rbt.shift(dir), dir)) {
+        for (list.items) |node|
+            swap(map, node, node.shift(dir));
+        const nxt = rbt.shift(dir);
+        swap(map, rbt, nxt);
+        return nxt;
     }
     return rbt;
 }
@@ -127,10 +122,10 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     var rbt = initMap(map);
     const instructions = map_split.next().?;
     for (instructions) |instr| rbt = switch (instr) {
-        '<' => moveRobot(map, rbt, .left),
-        '^' => moveRobot(map, rbt, .up),
-        '>' => moveRobot(map, rbt, .right),
-        'v' => moveRobot(map, rbt, .down),
+        '<' => try moveRobot(map, rbt, .left),
+        '^' => try moveRobot(map, rbt, .up),
+        '>' => try moveRobot(map, rbt, .right),
+        'v' => try moveRobot(map, rbt, .down),
         else => rbt,
     };
 
@@ -169,6 +164,6 @@ pub fn main() !void {
 
     _ = try file.readAll(buffer);
 
-    // try part1(allocator, std.mem.trimRight(u8, buffer, "\n"));
-    try part2(allocator, std.mem.trimRight(u8, buffer, "\n"));
+    try part1(allocator, std.mem.trimRight(u8, buffer, "\n"));
+    // try part2(allocator, std.mem.trimRight(u8, buffer, "\n"));
 }
