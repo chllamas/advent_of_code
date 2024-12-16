@@ -21,9 +21,34 @@ const Coord = struct {
 fn createMutableGraph(allocator: std.mem.Allocator, buffer: []const u8) !Graph {
     var list = std.ArrayList([]u8).init(allocator);
     var iter = std.mem.splitScalar(u8, buffer, '\n');
-    while (iter.next()) |line| {
-        if (line.len == 0) continue;
+    while (iter.next()) |line|
         try list.append(try allocator.dupe(u8, line));
+    return try list.toOwnedSlice();
+}
+
+fn createMutableWideGraph(allocator: std.mem.Allocator, buffer: []const u8) !Graph {
+    var list = std.ArrayList([]u8).init(allocator);
+    var iter = std.mem.splitScalar(u8, buffer, '\n');
+    while (iter.next()) |line| {
+        var arr = try allocator.alloc(u8, line.len * 2);
+        for (0.., line) |_i, ch| {
+            const i: usize = _i * 2;
+            switch (ch) {
+                'O' => {
+                    arr[i] = '[';
+                    arr[i + 1] = ']';
+                },
+                '@' => {
+                    arr[i] = '@';
+                    arr[i + 1] = '.';
+                },
+                else => {
+                    arr[i] = ch;
+                    arr[i + 1] = ch;
+                },
+            }
+        }
+        try list.append(arr);
     }
     return try list.toOwnedSlice();
 }
