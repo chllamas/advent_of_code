@@ -1,9 +1,8 @@
 const std = @import("std");
 
+const CoordList = std.ArrayList(Coord);
 const Direction = enum { left, right, up, down };
-
 const Graph = [][]u8;
-
 const Coord = struct {
     x: usize,
     y: usize,
@@ -92,6 +91,15 @@ fn findFirstDot(map: Graph, pos: Coord, dir: Direction) ?Coord {
     };
 }
 
+fn canMove(map: Graph, pos: Coord, dir: Direction) !?CoordList {
+    return switch (map[pos.y][pos.x]) {
+        '.' => CoordList.init(std.heap.page_allocator),
+        'O' => if (try canMove(map, pos.shift(dir), dir)) |lst| {} else null,
+        else => null,
+    };
+}
+
+// TODO: UPdate this to use a dependency style
 fn moveRobot(map: Graph, _rbt: Coord, dir: Direction) Coord {
     var rbt = _rbt;
     const nxt = rbt.shift(dir);
@@ -129,6 +137,25 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     std.debug.print("Result: {}\n", .{calculateGoods(map)});
 }
 
+fn part2(allocator: std.mem.Allocator, buffer: []const u8) !void {
+    var map_split = std.mem.splitSequence(u8, buffer, "\n\n");
+
+    const map = try createMutableWideGraph(allocator, map_split.next().?);
+    defer freeGraph(allocator, map);
+
+    var rbt = initMap(map);
+    const instructions = map_split.next().?;
+    for (instructions) |instr| rbt = switch (instr) {
+        '<' => moveRobot(map, rbt, .left),
+        '^' => moveRobot(map, rbt, .up),
+        '>' => moveRobot(map, rbt, .right),
+        'v' => moveRobot(map, rbt, .down),
+        else => rbt,
+    };
+
+    std.debug.print("Result: {}\n", .{calculateGoods(map)});
+}
+
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
@@ -142,6 +169,6 @@ pub fn main() !void {
 
     _ = try file.readAll(buffer);
 
-    try part1(allocator, std.mem.trimRight(u8, buffer, "\n"));
-    // try part2(allocator, std.mem.trimRight(u8, buffer, "\n"));
+    // try part1(allocator, std.mem.trimRight(u8, buffer, "\n"));
+    try part2(allocator, std.mem.trimRight(u8, buffer, "\n"));
 }
