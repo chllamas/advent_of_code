@@ -1,10 +1,21 @@
 const std = @import("std");
 
+const Direction = enum { left, right, up, down };
+
 const Graph = [][]u8;
 
 const Coord = struct {
     x: usize,
     y: usize,
+
+    fn shift(self: Coord, dir: Direction) Coord {
+        return switch (dir) {
+            .left => .{ .x = self.x - 1, .y = self.y },
+            .right => .{ .x = self.x + 1, .y = self.y },
+            .up => .{ .x = self.x, .y = self.y - 1 },
+            .down => .{ .x = self.x, .y = self.y + 1 },
+        };
+    }
 };
 
 fn createMutableGraph(allocator: std.mem.Allocator, buffer: []const u8) !Graph {
@@ -48,24 +59,12 @@ fn swap(map: Graph, a: Coord, b: Coord) void {
     map[b.y][b.x] = t;
 }
 
-fn findFirstDot(map: Graph, pos: Coord, dx: i2, dy: i2) ?Coord {
-    var new_coord = pos;
-    while (map[new_coord.y][new_coord.x] != '#') : (new_coord = .{
-        .x = switch (dx) {
-            -1 => new_coord.x - 1,
-            1 => new_coord.x + 1,
-            else => new_coord.x,
-        },
-        .y = switch (dy) {
-            -1 => new_coord.y - 1,
-            1 => new_coord.y + 1,
-            else => new_coord.y,
-        },
-    }) switch (map[new_coord.y][new_coord.x]) {
-        '.' => return .{ .x = new_coord.x, .y = new_coord.y },
-        else => continue,
+fn findFirstDot(map: Graph, pos: Coord, dir: Direction) ?Coord {
+    return switch (map[pos.y][pos.x]) {
+        '#' => null,
+        '.' => pos,
+        else => findFirstDot(map, pos.shift(dir), dir),
     };
-    return null;
 }
 
 fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
@@ -74,20 +73,26 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     const map = try createMutableGraph(allocator, map_split.next().?);
     defer freeGraph(allocator, map);
 
-    var r = initMap(map);
+    // robot
+    var rbt = initMap(map);
 
     const instructions = map_split.next().?;
     for (instructions) |instr| switch (instr) {
         '<' => {
-            switch (map[r.y][r.x - 1]) {
+            // TODO: Put this into a function to use for later
+            // Func only needs map, dir, and rbt to process
+            const dir = Direction.left;
+
+            const nxt = rbt.shift(dir);
+            switch (map[nxt.y][nxt.x]) {
                 '.' => {
-                    swap(map, .{ .x = r.x - 1, .y = r.y }, r);
-                    r = .{ .x = r.x - 1, .y = r.y };
+                    swap(map, rbt, nxt);
+                    rbt = nxt;
                 },
-                'O' => {
-                    // TODO: First check that there is a dot to swap with, then swap robot with dot
-                    swap(map, .{ .x = r.x - 1, .y = r.y }, r);
-                    r = .{ .x = r.x - 1, .y = r.y };
+                'O' => if (findFirstDot(map, nxt.shift(dir), dir)) |dot| {
+                    swap(map, nxt, dot);
+                    swap(map, nxt, rbt);
+                    rbt = nxt;
                 },
                 else => {},
             }
