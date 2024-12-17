@@ -5,12 +5,55 @@ const Graph = []const []const u8;
 const Coord = struct {
     x: i32,
     y: i32,
+
+    fn converse(self: Coord) Coord {
+        return .{
+            .x = self.y,
+            .y = self.x,
+        };
+    }
+
+    fn negate(self: Coord) Coord {
+        return .{
+            .x = self.x * -1,
+            .y = self.y * -1,
+        };
+    }
+
+    fn add(self: Coord, other: Coord) Coord {
+        return .{
+            .x = self.x + other.x,
+            .y = self.y + other.y,
+        };
+    }
 };
 
 const Node = struct {
     position: Coord,
     direction: Coord,
     running_score: u64,
+
+    fn next(self: Node) [3]Node {
+        const new_direction_left = self.direction.converse();
+        const new_direction_right = new_direction_left.negate();
+        return [3]Node{
+            Node{
+                .position = self.position.add(self.direction),
+                .direction = self.direction,
+                .running_score = self.running_score + 1,
+            },
+            Node{
+                .position = self.position.add(new_direction_left),
+                .direction = new_direction_left,
+                .running_score = self.running_score + 1001,
+            },
+            Node{
+                .position = self.position.add(new_direction_right),
+                .direction = new_direction_right,
+                .running_score = self.running_score + 1001,
+            },
+        };
+    }
 };
 
 fn createGraph(allocator: std.mem.Allocator, buffer: []const u8) !Graph {
@@ -45,9 +88,6 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     const graph = try createGraph(allocator, buffer);
     defer allocator.free(graph);
 
-    const visited = try allocator.alloc(bool, graph.len * graph[0].len);
-    defer allocator.free(visited);
-
     var queue = std.ArrayList(Node).init(allocator);
     defer queue.deinit();
 
@@ -56,12 +96,24 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     try launchNode(graph, &queue, .{ .x = strt.x - 1, .y = strt.y }, .{ .x = -1, .y = 0 });
     try launchNode(graph, &queue, .{ .x = strt.x, .y = strt.y + 1 }, .{ .x = 0, .y = 1 });
     try launchNode(graph, &queue, .{ .x = strt.x, .y = strt.y - 1 }, .{ .x = 0, .y = -1 });
+
+    main_loop: while (queue.popOrNull()) |node| {
+        for (node.next()[0..]) |next_node|
+            switch (graph[@intCast(next_node.position.y)][@intCast(next_node.position.x)]) {
+                '.' => try queue.append(next_node),
+                'E' => {
+                    std.debug.print("{}\n", .{next_node.running_score});
+                    break :main_loop;
+                },
+                else => {},
+            };
+    }
 }
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const file = try std.fs.cwd().openFile("input.txt", .{});
+    const file = try std.fs.cwd().openFile("test.txt", .{});
     defer file.close();
 
     const file_size = try file.getEndPos();
