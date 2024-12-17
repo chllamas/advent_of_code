@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const Graph = []const []const u8;
+
 const Coord = struct {
     x: i32,
     y: i32,
@@ -10,8 +12,6 @@ const Node = struct {
     direction: Coord,
     running_score: u64,
 };
-
-const Graph = []const []const u8;
 
 fn createGraph(allocator: std.mem.Allocator, buffer: []const u8) !Graph {
     var list = std.ArrayList([]const u8).init(allocator);
@@ -26,20 +26,36 @@ fn createGraph(allocator: std.mem.Allocator, buffer: []const u8) !Graph {
 fn findStartNode(graph: Graph) Coord {
     for (0.., graph) |y, row| {
         for (0.., row) |x, ch| if (ch == 'S')
-            return .{ .x = x, .y = y };
+            return .{ .x = @intCast(x), .y = @intCast(y) };
     }
     unreachable;
+}
+
+fn launchNode(graph: Graph, queue: *std.ArrayList(Node), pos: Coord, dir: Coord) !void {
+    if (graph[@intCast(pos.y)][@intCast(pos.x)] == '.') {
+        try queue.append(.{
+            .position = pos,
+            .direction = dir,
+            .running_score = 1,
+        });
+    }
 }
 
 fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     const graph = try createGraph(allocator, buffer);
     defer allocator.free(graph);
 
-    var visited = try allocator.alloc(bool, graph.len * graph[0].len);
+    const visited = try allocator.alloc(bool, graph.len * graph[0].len);
     defer allocator.free(visited);
 
     var queue = std.ArrayList(Node).init(allocator);
     defer queue.deinit();
+
+    const strt = findStartNode(graph);
+    try launchNode(graph, &queue, .{ .x = strt.x + 1, .y = strt.y }, .{ .x = 1, .y = 0 });
+    try launchNode(graph, &queue, .{ .x = strt.x - 1, .y = strt.y }, .{ .x = -1, .y = 0 });
+    try launchNode(graph, &queue, .{ .x = strt.x, .y = strt.y + 1 }, .{ .x = 0, .y = 1 });
+    try launchNode(graph, &queue, .{ .x = strt.x, .y = strt.y - 1 }, .{ .x = 0, .y = -1 });
 }
 
 pub fn main() !void {
