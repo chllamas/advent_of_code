@@ -71,7 +71,7 @@ fn calculateGoods(map: Graph) usize {
     var sum: usize = 0;
     for (0.., map) |y, row| {
         for (0.., row) |x, ch| {
-            if (ch == 'O') sum += (100 * y) + x;
+            if (ch == 'O' or ch == '[') sum += (100 * y) + x;
         }
     }
     return sum;
@@ -98,28 +98,24 @@ fn getDependencies(map: Graph, deps: *std.ArrayList(Coord), pos: Coord, dir: Dir
             try deps.append(pos);
             break :o_check true;
         } else false,
-        '[', ']' => wide_check: {
-            const other = pos.shift(dir);
-            if ((dir == .right or dir == .left) and try getDependencies(map, deps, other.shift(.right), dir)) {
-                try deps.append(pos);
-                try deps.append(other);
-                break :wide_check true;
-            } else if (dir != .right and try getDependencies(map, deps, pos.shift(dir), dir) and try getDependencies(map, deps, other.shift(dir), dir)) {
-                try safe_append(deps, pos);
+        '[' => wide_check: {
+            const other = pos.shift(.right);
+            if ((dir == .right and try getDependencies(map, deps, other.shift(.right), dir)) or
+                ((dir == .up or dir == .down) and try getDependencies(map, deps, pos.shift(dir), dir) and try getDependencies(map, deps, other.shift(dir), dir)))
+            {
                 try safe_append(deps, other);
+                try safe_append(deps, pos);
                 break :wide_check true;
             }
             break :wide_check false;
         },
         ']' => wide_check: {
             const other = pos.shift(.left);
-            if (dir == .right and try getDependencies(map, deps, other.shift(.right), dir)) {
-                try deps.append(pos);
-                try deps.append(other);
-                break :wide_check true;
-            } else if (dir != .right and try getDependencies(map, deps, pos.shift(dir), dir) and try getDependencies(map, deps, other.shift(dir), dir)) {
-                try safe_append(deps, pos);
+            if ((dir == .left and try getDependencies(map, deps, other.shift(.left), dir)) or
+                ((dir == .up or dir == .down) and try getDependencies(map, deps, pos.shift(dir), dir) and try getDependencies(map, deps, other.shift(dir), dir)))
+            {
                 try safe_append(deps, other);
+                try safe_append(deps, pos);
                 break :wide_check true;
             }
             break :wide_check false;
@@ -131,6 +127,7 @@ fn getDependencies(map: Graph, deps: *std.ArrayList(Coord), pos: Coord, dir: Dir
 fn moveRobot(map: Graph, rbt: Coord, dir: Direction) !Coord {
     var list = std.ArrayList(Coord).init(std.heap.page_allocator);
     defer list.deinit();
+
     if (try getDependencies(map, &list, rbt.shift(dir), dir)) {
         for (list.items) |node|
             swap(map, node, node.shift(dir));
@@ -138,13 +135,14 @@ fn moveRobot(map: Graph, rbt: Coord, dir: Direction) !Coord {
         swap(map, rbt, nxt);
         return nxt;
     }
+
     return rbt;
 }
 
-fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
+fn solve(allocator: std.mem.Allocator, buffer: []const u8, mapBuilder: fn (std.mem.Allocator, []const u8) std.mem.Allocator.Error!Graph) !void {
     var map_split = std.mem.splitSequence(u8, buffer, "\n\n");
 
-    const map = try createMutableGraph(allocator, map_split.next().?);
+    const map = try mapBuilder(allocator, map_split.next().?);
     defer freeGraph(allocator, map);
 
     var rbt = initMap(map);
@@ -160,23 +158,12 @@ fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
     std.debug.print("Result: {}\n", .{calculateGoods(map)});
 }
 
+fn part1(allocator: std.mem.Allocator, buffer: []const u8) !void {
+    try solve(allocator, buffer, createMutableGraph);
+}
+
 fn part2(allocator: std.mem.Allocator, buffer: []const u8) !void {
-    var map_split = std.mem.splitSequence(u8, buffer, "\n\n");
-
-    const map = try createMutableWideGraph(allocator, map_split.next().?);
-    defer freeGraph(allocator, map);
-
-    var rbt = initMap(map);
-    const instructions = map_split.next().?;
-    for (instructions) |instr| rbt = switch (instr) {
-        '<' => moveRobot(map, rbt, .left),
-        '^' => moveRobot(map, rbt, .up),
-        '>' => moveRobot(map, rbt, .right),
-        'v' => moveRobot(map, rbt, .down),
-        else => rbt,
-    };
-
-    std.debug.print("Result: {}\n", .{calculateGoods(map)});
+    try solve(allocator, buffer, createMutableWideGraph);
 }
 
 pub fn main() !void {
@@ -193,5 +180,5 @@ pub fn main() !void {
     _ = try file.readAll(buffer);
 
     try part1(allocator, std.mem.trimRight(u8, buffer, "\n"));
-    // try part2(allocator, std.mem.trimRight(u8, buffer, "\n"));
+    try part2(allocator, std.mem.trimRight(u8, buffer, "\n"));
 }
