@@ -83,6 +83,13 @@ fn swap(map: Graph, a: Coord, b: Coord) void {
     map[b.y][b.x] = t;
 }
 
+fn safe_append(deps: *std.ArrayList(Coord), c: Coord) !void {
+    for (deps.items) |t| {
+        if (t.x == c.x and t.y == c.y) return;
+    }
+    try deps.append(c);
+}
+
 fn getDependencies(map: Graph, deps: *std.ArrayList(Coord), pos: Coord, dir: Direction) !bool {
     return switch (map[pos.y][pos.x]) {
         '.' => true,
@@ -92,9 +99,30 @@ fn getDependencies(map: Graph, deps: *std.ArrayList(Coord), pos: Coord, dir: Dir
             break :o_check true;
         } else false,
         '[', ']' => wide_check: {
-            // TODO: Get the vertical dependencies to close off boxes into a list
-            // How do I avoid check upper boxes without checking twice
-            break :wide_check true;
+            const other = pos.shift(dir);
+            if ((dir == .right or dir == .left) and try getDependencies(map, deps, other.shift(.right), dir)) {
+                try deps.append(pos);
+                try deps.append(other);
+                break :wide_check true;
+            } else if (dir != .right and try getDependencies(map, deps, pos.shift(dir), dir) and try getDependencies(map, deps, other.shift(dir), dir)) {
+                try safe_append(deps, pos);
+                try safe_append(deps, other);
+                break :wide_check true;
+            }
+            break :wide_check false;
+        },
+        ']' => wide_check: {
+            const other = pos.shift(.left);
+            if (dir == .right and try getDependencies(map, deps, other.shift(.right), dir)) {
+                try deps.append(pos);
+                try deps.append(other);
+                break :wide_check true;
+            } else if (dir != .right and try getDependencies(map, deps, pos.shift(dir), dir) and try getDependencies(map, deps, other.shift(dir), dir)) {
+                try safe_append(deps, pos);
+                try safe_append(deps, other);
+                break :wide_check true;
+            }
+            break :wide_check false;
         },
         else => unreachable,
     };
