@@ -7,11 +7,30 @@ fn part1(file_name: []const u8) !u32 {
     const buffer = std.mem.trimRight(u8, _buffer, "\n");
     defer allocator.free(buffer);
 
-    // NOTE: Remember to free the arraylists later
-    var graph = std.ArrayHashMap(u16, []const u16).init(allocator);
-    var connections = std.mem.splitScalar(u8, buffer, '\n');
+    var graph = std.AutoHashMap(u16, []const u16).init(allocator);
+    var edges = std.mem.splitScalar(u8, buffer, '\n');
     defer graph.deinit();
-    while (connections.next()) |conn| {}
+    while (edges.next()) |edge| {
+        const l = encodeComputer(edge[0..2]);
+        const r = encodeComputer(edge[3..]);
+        try graph.put(l, if (graph.get(l)) |arr|
+            try append(arr, r)
+        else
+            try create(r));
+        try graph.put(r, if (graph.get(r)) |arr|
+            try append(arr, l)
+        else
+            try create(l));
+    }
+
+    edges = std.mem.splitScalar(u8, buffer, '\n');
+    while (edges.next()) |edge| {
+        const l = encodeComputer(edge[0..2]);
+        const r = encodeComputer(edge[3..]);
+    }
+
+    var iter = graph.valueIterator();
+    while (iter.next()) |v| allocator.free(v.*);
 
     return 0;
 }
@@ -24,6 +43,12 @@ test "part1" {
     std.debug.print("Part 1 Result: {}\n", .{try part1("input.txt"[0..])});
 }
 
+fn create(val: u16) ![]const u16 {
+    const arr = try allocator.alloc(u16, 1);
+    arr[0] = val;
+    return arr;
+}
+
 fn append(arr: []const u16, val: u16) ![]const u16 {
     const new_arr = try allocator.alloc(u16, arr.len + 1);
     std.mem.copyForwards(u16, new_arr, arr);
@@ -32,7 +57,8 @@ fn append(arr: []const u16, val: u16) ![]const u16 {
     return new_arr;
 }
 
-fn encodeComputer(computer: [2]u8) u16 {
+// We can assume the slices has at least 2 bytes
+fn encodeComputer(computer: []const u8) u16 {
     const a: u16 = @intCast(computer[0]);
     const b: u16 = @intCast(computer[1]);
     return (a << 8) & b;
