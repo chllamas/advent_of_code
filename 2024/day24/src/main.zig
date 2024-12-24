@@ -2,7 +2,8 @@ const std = @import("std");
 
 const allocator = std.heap.page_allocator;
 
-fn part1(file_name: []const u8) !u32 {
+// why a u46? because out input has max z45 so we use that hard coded oh well
+fn part1(file_name: []const u8) !u46 {
     const _buffer = try readFile(file_name);
     const buffer = std.mem.trimRight(u8, _buffer, "\n");
     defer allocator.free(buffer);
@@ -10,15 +11,9 @@ fn part1(file_name: []const u8) !u32 {
     return 0;
 }
 
-test "example1_part1" {
+pub fn main() !void {
     std.debug.assert(try part1("test_small.txt"[0..]) == 4);
-}
-
-test "example2_part1" {
     std.debug.assert(try part1("test_large.txt"[0..]) == 2024);
-}
-
-test "part1" {
     std.debug.print("Part 1 Result: {}\n", .{try part1("input.txt"[0..])});
 }
 
