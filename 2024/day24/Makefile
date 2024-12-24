@@ -1,5 +1,5 @@
 run:
-	zig test src/main.zig
+	zig run src/main.zig
 
 push:
 	git add .
