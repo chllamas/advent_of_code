@@ -32,21 +32,19 @@ fn part1(file_name: []const u8) !u32 {
     var result: u32 = 0;
     for (locks.items[0..]) |lock| {
         key_loop: for (keys.items[0..]) |key| {
-            for (0..5) |i| {
-                if (lock[i] + key[i] > 5) continue :key_loop;
-                result += 1;
-            }
+            for (0..5) |i| if (lock[i] + key[i] > 5)
+                continue :key_loop;
+            result += 1;
         }
     }
 
-    std.debug.print("{} combinations fit!\n", .{result});
     return result;
 }
 
 pub fn main() !void {
     std.debug.assert(try part1("test.txt"[0..]) == 3);
-    // std.debug.print("Example passed\n", .{});
-    // std.debug.print("Part 1 Result: {}\n", .{try part1("input.txt"[0..])});
+    std.debug.print("Example passed\n", .{});
+    std.debug.print("Part 1 Result: {}\n", .{try part1("input.txt"[0..])});
 }
 
 fn readFile(file_name: []const u8) ![]const u8 {
